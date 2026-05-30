@@ -50,6 +50,9 @@
             packages = [
               rustToolchain
               rustfmtNightly
+
+              # CI
+              pkgs.cargo-edit
               pkgs.git-cliff
               pkgs.just
             ];
