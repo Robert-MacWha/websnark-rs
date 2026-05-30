@@ -3,14 +3,11 @@ release:
     cargo clippy
     cargo package --list --allow-dirty
     cargo publish --dry-run --allow-dirty
-    git cliff --bump --unreleased
-    echo "If everything looks good, run 'just release-final' to finalize the release."
-
-release-final:
-    cargo check
-    cargo clippy
-    cargo publish --dry-run
     git cliff --bump -o CHANGELOG.md
+    echo "If everything looks good, run 'just publish' to push the release."
+
+publish:
     git add CHANGELOG.md
     git commit -m "chore: release $(git cliff --bumped-version)"
     git tag $(git cliff --bumped-version) -m "Release v$(git cliff --bumped-version)"
+    git push && git push --tags 
