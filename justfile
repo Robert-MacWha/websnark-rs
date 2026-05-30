@@ -9,6 +9,8 @@ release:
 
 publish:
     git add CHANGELOG.md
+    git add Cargo.toml
+    git add Cargo.lock
     git commit -m "chore: release $(git cliff --bumped-version)"
     git tag "$(git cliff --bumped-version)" -m "Release $(git cliff --bumped-version)"
     git push && git push --tags 
