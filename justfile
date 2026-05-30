@@ -8,6 +8,6 @@ release:
 
 publish:
     git add CHANGELOG.md
-    git commit -m "chore: release $(git cliff --bumped-version)"
-    git tag $(git cliff --bumped-version) -m "Release v$(git cliff --bumped-version)"
+    git commit -m "chore: release v$(git cliff --bumped-version)"
+    git tag "v$(git cliff --bumped-version)" -m "Release v$(git cliff --bumped-version)"
     git push && git push --tags 
