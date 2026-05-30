@@ -9,8 +9,8 @@ release:
 release-final:
     cargo check
     cargo clippy
+    cargo publish --dry-run
     git cliff --bump -o CHANGELOG.md
     git add CHANGELOG.md
     git commit -m "chore: release $(git cliff --bumped-version)"
-    git tag $(git cliff --bumped-version)
-    git push && git push --tags
+    git tag $(git cliff --bumped-version) -m "Release v$(git cliff --bumped-version)"
