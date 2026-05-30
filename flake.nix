@@ -66,6 +66,10 @@
             packages = [
               rustToolchain
               rustfmtNightly
+
+              pkgs.wasm-pack
+              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.nodejs
             ];
           };
         };
