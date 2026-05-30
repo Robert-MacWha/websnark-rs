@@ -1,7 +1,9 @@
 use anyhow::anyhow;
-use ark_ff::Field;
+use ark_bn254::Fr;
+use ark_ff::{Field, PrimeField};
 use num_bigint::BigInt;
 use std::sync::OnceLock;
+use tracing::info;
 
 use crate::{
     circom::ast::{BinOpKind, Expr, Function, Stmt},
@@ -148,6 +150,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
                     {
                         return Ok(lhs);
                     }
+
                     Ok((lhs.into_number()? % rhs.into_number()?).into())
                 }
                 BinOpKind::Div => Ok((lhs.into_number()? / rhs.into_number()?).into()),
@@ -157,12 +160,16 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
                 BinOpKind::Gt => Ok((lhs.into_fr()? > rhs.into_fr()?).into()),
                 BinOpKind::And => Ok((lhs.into_number()? & rhs.into_number()?).into()),
                 BinOpKind::Shl => {
-                    let n = rhs.into_u64()?;
-                    Ok((lhs.into_number()? << n).into())
+                    info!("Shifting left by {} bits", rhs);
+                    let lhs = lhs.into_fr()?.into_bigint();
+                    let n = rhs.into_u32()?;
+                    Ok(Fr::from(lhs << n).into())
                 }
                 BinOpKind::Shr => {
-                    let n = rhs.into_u64()?;
-                    Ok((lhs.into_number()? >> n).into())
+                    info!("Shifting right by {} bits", rhs);
+                    let lhs = lhs.into_fr()?.into_bigint();
+                    let n = rhs.into_u32()?;
+                    Ok(Fr::from(lhs >> n).into())
                 }
             }
         }
@@ -181,14 +188,14 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
         }
         Expr::ModPow(base, exp, _modulos) => {
             let base = execute_expr(ctx, base)?.into_fr()?;
-            let exp = execute_expr(ctx, exp)?.into_u64()?;
+            let exp = execute_expr(ctx, exp)?.into_u32()?;
             //? ModPow is always used to convert to Montgomery form, so we can ignore the modulos arg.
             // let modulos = execute_expr(ctx, modulos)?.into_number()?;
             // if modulos != *bigint_prime() {
             //     bail!("modulos must be equal to the prime");
             // }
 
-            Ok(base.pow([exp]).into())
+            Ok(base.pow([exp as u64]).into())
         }
         Expr::LogicalOr(lhs, rhs) => {
             let lhs = execute_expr(ctx, lhs)?;

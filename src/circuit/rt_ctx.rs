@@ -184,7 +184,7 @@ impl RTCtx {
         Ok(())
     }
 
-    fn build_signal_name(&self, name: &str, sels: Vec<u64>) -> Result<String, anyhow::Error> {
+    fn build_signal_name(&self, name: &str, sels: Vec<u32>) -> Result<String, anyhow::Error> {
         let mut s = if let Some(current) = &self.current_component {
             format!("{}.{}", current, name)
         } else {
@@ -197,9 +197,9 @@ impl RTCtx {
     fn build_pin_name(
         &self,
         component_name: &str,
-        component_sels: Vec<u64>,
+        component_sels: Vec<u32>,
         signal_name: &str,
-        signal_sels: Vec<u64>,
+        signal_sels: Vec<u32>,
     ) -> Result<String, anyhow::Error> {
         let mut s = if component_name == "one" {
             "one".to_string()
@@ -267,13 +267,13 @@ impl RTCtx {
     }
 }
 
-fn into_numbers(vals: Vec<Value>) -> Result<Vec<u64>> {
+fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>> {
     vals.into_iter()
-        .map(|v| v.into_u64())
+        .map(|v| v.into_u32())
         .collect::<Result<Vec<_>>>()
 }
 
-fn set_var_array(a: &mut Vec<Value>, sels: &[u64], value: Value) -> Result<()> {
+fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) -> Result<()> {
     let idx = sels[0]
         .to_usize()
         .ok_or_else(|| anyhow!("bad var index: {}", sels[0]))?;
@@ -293,7 +293,7 @@ fn set_var_array(a: &mut Vec<Value>, sels: &[u64], value: Value) -> Result<()> {
     set_var_array(nested, &sels[1..], value)
 }
 
-fn select<'a>(a: &'a Value, sels: &[u64]) -> Result<&'a Value> {
+fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value> {
     if sels.is_empty() {
         return Ok(a);
     }
@@ -309,7 +309,7 @@ fn select<'a>(a: &'a Value, sels: &[u64]) -> Result<&'a Value> {
     select(next, &sels[1..])
 }
 
-fn append_sels(out: &mut String, sels: Vec<u64>) -> Result<(), anyhow::Error> {
+fn append_sels(out: &mut String, sels: Vec<u32>) -> Result<(), anyhow::Error> {
     for s in sels {
         write!(out, "[{}]", s)?;
     }
@@ -360,7 +360,7 @@ mod tests {
         let mut ctx = fixture();
         ctx.set_signal("one", vec![], 1.into()).unwrap();
         assert_eq!(
-            ctx.get_signal("one", vec![]).unwrap().into_u64().unwrap(),
+            ctx.get_signal("one", vec![]).unwrap().into_u32().unwrap(),
             1
         );
     }
