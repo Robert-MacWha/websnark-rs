@@ -1,3 +1,10 @@
+## [0.1.1] - 2026-05-30
+
+### ⚙️ Miscellaneous Tasks
+
+- Add workflow_call to ci workflow
+- Add cargo-edit to auto-increment cargo.toml version
+- Add cargo.lock & cargo.toml in publish step
 ## [0.1.0] - 2026-05-30
 
 ### 🚀 Features
@@ -11,3 +18,6 @@
 - Add release workflow with OIDC
 - Add justfile for releases
 - Disable auto-push in release-final
+- Release 0.1.0
+- Seperate release & publish steps
+- Add `v` prefix to release tags
