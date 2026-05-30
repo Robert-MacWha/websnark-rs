@@ -51,6 +51,7 @@
               rustToolchain
               rustfmtNightly
               pkgs.git-cliff
+              pkgs.just
             ];
           };
 
