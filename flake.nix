@@ -1,5 +1,5 @@
 {
-  description = "Tlock dev shell";
+  description = "Dev shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -50,6 +50,10 @@
             packages = [
               rustToolchain
               rustfmtNightly
+
+              pkgs.wasm-pack
+              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.nodejs
 
               # CI
               pkgs.cargo-edit
