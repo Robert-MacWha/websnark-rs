@@ -8,7 +8,14 @@ repository = "https://github.com/Robert-MacWha/websnark-rs"
 readme = "README.md"
 keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
-exclude = [".github/*", "flake.lock", "flake.nix", "*/testdata/*"]
+exclude = [
+    "*/testdata/**/*",
+    ".github/*",
+    ".gitignore",
+    "flake.lock",
+    "flake.nix",
+    "cliff.toml",
+]
 
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]
@@ -52,7 +59,3 @@ harness = false
 [profile.test]
 # Required to avoid stack overflows in witness generation
 opt-level = 1
-
-[lints.clippy]
-unwrap_used = "deny"
-expect_used = "deny"
