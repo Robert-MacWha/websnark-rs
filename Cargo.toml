@@ -1,0 +1,58 @@
+[package]
+name = "websnark-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Circom v1 transpiler and proof generation library in Rust"
+license = "MIT"
+repository = "https://github.com/Robert-MacWha/websnark-rs"
+readme = "README.md"
+keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+exclude = [".github/*", "flake.lock", "flake.nix", "*/testdata/*"]
+
+[package.metadata.docs.rs]
+targets = ["wasm32-unknown-unknown"]
+features = []
+
+[features]
+default = []
+parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-poly/parallel"]
+
+[dependencies]
+anyhow = "1.0.102"
+ark-bn254 = "0.6.0"
+ark-ec = "0.6.0"
+ark-ff = "0.6.0"
+ark-poly = "0.6.0"
+lalrpop-util = "0.23.1"
+num-bigint = { version = "0.4.6", features = ["serde"] }
+num-traits = "0.2.19"
+rustc-hash = "2.1.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.23"
+
+[dev-dependencies]
+criterion = "0.8.2"
+insta = "1.47.2"
+tracing-test = "0.2.6"
+
+[build-dependencies]
+lalrpop = "0.23.1"
+
+[[bench]]
+name = "witness"
+harness = false
+
+[[bench]]
+name = "proof"
+harness = false
+
+[profile.test]
+# Required to avoid stack overflows in witness generation
+opt-level = 1
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
