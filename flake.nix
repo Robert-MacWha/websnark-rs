@@ -31,7 +31,7 @@
           inherit system;
         };
 
-        rustToolchain = pkgs.rust-bin.stable."1.93.0".default.override {
+        rustToolchain = pkgs.rust-bin.nightly."2025-11-15".default.override {
           extensions = [
             "rust-src"
             "llvm-tools"
@@ -42,7 +42,7 @@
           ];
         };
 
-        rustfmtNightly = pkgs.rust-bin.nightly.latest.rustfmt;
+        rustfmtNightly = pkgs.rust-bin.nightly."2025-11-15".rustfmt;
       in
       {
         devShells = {
@@ -51,9 +51,12 @@
               rustToolchain
               rustfmtNightly
 
-              pkgs.wasm-pack
-              pkgs.wasm-bindgen-cli_0_2_118
               pkgs.nodejs
+              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.wasm-pack
+              pkgs.wabt
+              pkgs.binaryen
+              pkgs.geckodriver
 
               # CI
               pkgs.cargo-edit
