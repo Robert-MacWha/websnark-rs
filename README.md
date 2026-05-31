@@ -32,13 +32,17 @@ Circom V1 produces JSON artifacts for the circuit, proving key, and verification
 
 Compared to snarkjs, websnark-rs is significantly faster for both witness and proof generation. The below benchmarks were run against the tornadocash withdraw circuit on a Ryzen 5 3600 CPU.
 
-| benchmark    | websnark-rs (native) | websnark-rs (browser) | websnark-rs (browser +parallel) | snarkjs (nodejs 14) | snarkjs (browser) |
-| ------------ | -------------------- | --------------------- | ------------------------------- | ------------------- | ----------------- |
-| witness (ms) | 180 ms               | 600 ms                | 621 ms                          | 754 ms              |                   |
-| proof (ms)   | 270 ms               | 8000 ms               | 1500 ms                         | 3500 ms             |                   |
+| library                         | witness generation | proof generation |
+| ------------------------------- | ------------------ | ---------------- |
+| websnark-rs (native)            | 180 ms             | 270 ms           |
+| websnark-rs (browser)           | 620 ms             | 8000 ms          |
+| websnark-rs (browser +parallel) | 620 ms             | 1500 ms          |
+| snarkjs 0.1.20 (nodejs 14)      | 620 ms             | 3500 ms          |
 
 ## Features
  - `parallel`: Enables parallel proof generation using Rayon.
 
 ## Wasm support
-websnark-rs can be compiled to WASM for use in web applications.
+websnark-rs can be compiled to WASM for use in web applications. 
+
+The `parallel` feature is supported in WASM using `[wasm-bindgen-rayon](https://github.com/RReverser/wasm-bindgen-rayon)`. When enabled, proof generation will be parallelized across multiple web workers. See the `wasm-bindgen-rayon` documentation for setup details.

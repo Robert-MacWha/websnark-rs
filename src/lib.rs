@@ -9,5 +9,5 @@ pub mod proving_key;
 mod utils;
 pub mod verifying_key;
 
-#[cfg(all(target_arch = "wasm32", feature = "parallel"))]
-compile_error!("The 'parallel' feature is not supported in WASM builds.");
+#[cfg(all(feature = "parallel", target_arch = "wasm32"))]
+pub use wasm_bindgen_rayon::init_thread_pool;
