@@ -7,4 +7,6 @@ license = "MIT"
 publish = false
 
 [dependencies]
-clap = "4.6.1"
+clap = { workspace = true, features = ["derive"] }
+websnark-rs = { workspace = true }
+postcard = { workspace = true, features = ["use-std"] }

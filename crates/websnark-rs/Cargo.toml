@@ -29,16 +29,15 @@ parallel = [
 
 [dependencies]
 anyhow = { workspace = true }
-ark-bn254 = { workspace = true, features = ["std"] }
-ark-ec = { workspace = true, features = ["std"] }
-ark-ff = { workspace = true, features = ["std"] }
-ark-poly = { workspace = true, features = ["std"] }
+ark-bn254 = { workspace = true }
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-poly = { workspace = true }
 ark-serialize = { workspace = true }
 ark-std = { workspace = true }
 lalrpop-util = { workspace = true }
 num-bigint = { workspace = true }
 num-traits = { workspace = true }
-postcard = { workspace = true, features = ["alloc"] }
 rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
