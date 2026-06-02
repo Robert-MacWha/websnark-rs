@@ -27,6 +27,7 @@ wasm-bindgen-test = "=0.3.68"
 lalrpop = "0.23.1"
 websnark-rs = { path = "crates/websnark-rs" }
 clap = "4.6.1"
+thiserror = "2"
 
 [profile.test]
 opt-level = 1

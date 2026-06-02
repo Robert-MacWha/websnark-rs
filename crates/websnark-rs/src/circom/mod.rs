@@ -12,16 +12,19 @@ lalrpop_util::lalrpop_mod!(
 );
 pub mod ast;
 
+#[derive(thiserror::Error, Debug)]
+#[error("parse error: {0}")]
+pub struct ParseError(#[from] lalrpop_util::ParseError<usize, String, String>);
+
 /// Parses a Circom function definition from the given input string and returns
 /// an AST representation of it.
-pub fn parse_function(input: &str) -> Result<ast::Function, anyhow::Error> {
+pub fn parse_function(input: &str) -> Result<ast::Function, ParseError> {
     // snarkjs (`@tornado/snarkjs/src/circuit.js`) emits `return foo();;` with a
     // double semicolon after returns.
     let input = input.replace(";;", ";");
-
     grammer::FunctionParser::new()
         .parse(&input)
-        .map_err(|e| anyhow::anyhow!("parse failed: {}", e))
+        .map_err(|e| ParseError(e.map_token(|t| t.to_string()).map_error(|e| e.to_string())))
 }
 
 #[cfg(test)]

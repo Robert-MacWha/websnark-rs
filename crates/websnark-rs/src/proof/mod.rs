@@ -7,3 +7,14 @@ mod proof;
 
 pub use generate_proof::generate_proof;
 pub use proof::Proof;
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum ProofError {
+    #[error("Invalid witness: {0}")]
+    InvalidWitness(ark_bn254::Fr),
+    #[error("Invalid coefficient: {0}")]
+    InvalidCoefficient(ark_bn254::Fr),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}

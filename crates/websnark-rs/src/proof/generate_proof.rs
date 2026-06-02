@@ -6,7 +6,9 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use tracing::instrument;
 
 use crate::{
-    circuit::Witness, proof::fr_snarkjs::FrSnarkjs, proof::proof::Proof, proving_key::ProvingKey,
+    circuit::Witness,
+    proof::{ProofError, fr_snarkjs::FrSnarkjs, proof::Proof},
+    proving_key::ProvingKey,
 };
 
 /// Generate a zk-SNARK groth16 proof for a given proving key, witness, and random scalars `r` and `s`.
@@ -16,7 +18,7 @@ pub fn generate_proof(
     w: Witness,
     r: Fr,
     s: Fr,
-) -> Result<(Proof, Vec<Fr>), anyhow::Error> {
+) -> Result<(Proof, Vec<Fr>), ProofError> {
     let mut proof_a = G1Projective::msm_unchecked(&pk.a, &w);
     let mut proof_b_g1 = G1Projective::msm_unchecked(&pk.b_g1, &w);
     let mut proof_b_g2 = G2Projective::msm_unchecked(&pk.b_g2, &w);
@@ -61,7 +63,7 @@ pub fn generate_proof(
 
 // snarkjs/websnark proving keys order polsA/polsB around ω_7 (7^((R-1)/2^28)), not
 // ark-bn254's ω_5 — so the FFT runs over `FrSnarkjs` and we convert at the boundary.
-fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, anyhow::Error> {
+fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
     let m = pk.domain_size as usize;
 
     let to_s = |x: Fr| FrSnarkjs::from_bigint(x.into_bigint());
@@ -69,12 +71,14 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, anyhow::Error> {
     let mut pol_at = vec![FrSnarkjs::ZERO; m];
     let mut pol_bt = vec![FrSnarkjs::ZERO; m];
     for (i, w_i) in w.iter().enumerate().take(pk.n_vars as usize) {
-        let w_i = to_s(*w_i).context("invalid witness value")?;
+        let w_i = to_s(*w_i).ok_or(ProofError::InvalidWitness(*w_i))?;
         for (&j, coeff) in &pk.pols_a[i] {
-            pol_at[j as usize] += w_i * to_s(*coeff).context("invalid pols_a coefficient")?;
+            pol_at[j as usize] +=
+                w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient(*coeff))?;
         }
         for (&j, coeff) in &pk.pols_b[i] {
-            pol_bt[j as usize] += w_i * to_s(*coeff).context("invalid pols_b coefficient")?;
+            pol_bt[j as usize] +=
+                w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient(*coeff))?;
         }
     }
 
@@ -104,11 +108,11 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, anyhow::Error> {
 
     domain_2m.ifft_in_place(&mut pol_ab);
 
-    pol_ab
+    Ok(pol_ab
         .split_off(m)
         .into_iter()
         .map(|x| Fr::from_bigint(x.into_bigint()).context("invalid ab value"))
-        .collect::<Result<_, anyhow::Error>>()
+        .collect::<Result<_, anyhow::Error>>()?)
 }
 
 #[cfg(test)]

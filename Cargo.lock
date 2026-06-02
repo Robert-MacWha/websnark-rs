@@ -1830,6 +1830,7 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
+ "thiserror",
  "tracing",
  "tracing-test",
  "wasm-bindgen",
