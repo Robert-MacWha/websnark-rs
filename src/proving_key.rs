@@ -42,7 +42,7 @@ pub struct ProvingKey {
 
 impl ProvingKey {
     /// Deserialize from the snarkjs JSON format (decimal string encoded fields).
-    pub fn from_json(s: &str) -> Result<Self, anyhow::Error> {
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
         let j: ProvingKeyJson = serde_json::from_str(s)?;
         Ok(ProvingKey {
             a: j.a,
@@ -64,7 +64,7 @@ impl ProvingKey {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ProvingKeyJson {
     #[serde(rename = "A", with = "g1_vec_json_serde")]
     a: Vec<G1Affine>,

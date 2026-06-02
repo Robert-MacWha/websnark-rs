@@ -16,7 +16,7 @@ pub struct Proof {
 
 impl Proof {
     /// Deserialize from the snarkjs JSON format (decimal string encoded fields).
-    pub fn from_json(s: &str) -> Result<Self, anyhow::Error> {
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
         let j: ProofJson = serde_json::from_str(s)?;
         Ok(Proof {
             a: j.a,

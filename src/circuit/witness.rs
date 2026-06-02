@@ -14,11 +14,15 @@ impl Witness {
     }
 
     /// Deserialize from the snarkjs JSON format (array of decimal strings).
-    pub fn from_json(s: &str) -> Result<Self, anyhow::Error> {
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
         let strings: Vec<String> = serde_json::from_str(s)?;
         let frs = strings
             .iter()
-            .map(|v| Fr::from_str(v).map_err(|_| anyhow::anyhow!("Failed to parse Fr from '{v}'")))
+            .map(|v| {
+                Fr::from_str(v).map_err(|_| {
+                    serde_json::Error::custom(format!("Failed to parse Fr from '{v}'"))
+                })
+            })
             .collect::<Result<_, _>>()?;
         Ok(Witness(frs))
     }

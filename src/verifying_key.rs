@@ -22,7 +22,7 @@ pub struct VerifyingKey {
 
 impl VerifyingKey {
     /// Deserialize from the snarkjs JSON format (decimal string encoded fields).
-    pub fn from_json(s: &str) -> Result<Self, anyhow::Error> {
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
         let j: VerifyingKeyJson = serde_json::from_str(s)?;
         Ok(VerifyingKey {
             alpha: j.alpha,
@@ -34,7 +34,7 @@ impl VerifyingKey {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct VerifyingKeyJson {
     #[serde(rename = "vk_alfa_1", with = "g1_json_serde")]
     alpha: G1Affine,
