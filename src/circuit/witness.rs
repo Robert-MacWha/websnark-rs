@@ -30,7 +30,6 @@ impl Witness {
     }
 }
 
-/// Binary serde: sequence of uncompressed Fr byte arrays.
 impl Serialize for Witness {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut seq = s.serialize_seq(Some(self.0.len()))?;
