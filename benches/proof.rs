@@ -6,12 +6,12 @@ use criterion::Criterion;
 use websnark_rs::{circuit::Witness, proof::generate_proof, proving_key::ProvingKey};
 
 fn bench_generate_proof(c: &mut Criterion) {
-    let pk_bytes =
-        std::fs::read("src/testdata/withdraw_proving_key.json").expect("read proving key");
-    let witness_bytes = std::fs::read("src/testdata/witness.json").expect("read witness");
+    let pk_str = std::fs::read_to_string("src/testdata/withdraw_proving_key.json")
+        .expect("read proving key");
+    let witness_str = std::fs::read_to_string("src/testdata/witness.json").expect("read witness");
 
-    let pk: ProvingKey = serde_json::from_slice(&pk_bytes).expect("parse proving key");
-    let witness: Witness = serde_json::from_slice(&witness_bytes).expect("parse witness");
+    let pk = ProvingKey::from_json(&pk_str).expect("parse proving key");
+    let witness = Witness::from_json(&witness_str).expect("parse witness");
 
     let r = Fr::ZERO;
     let s = Fr::ZERO;

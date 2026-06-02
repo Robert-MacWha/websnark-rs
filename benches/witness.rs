@@ -5,13 +5,13 @@ use std::hint::black_box;
 use websnark_rs::circuit::{Circuit, Value, calculate_witness};
 
 fn bench_calculate_witness(c: &mut Criterion) {
-    let circuit_bytes = std::fs::read("src/testdata/withdraw.json").expect("read circuit");
-    let input_bytes =
-        std::fs::read("src/testdata/withdraw_input_signals.json").expect("read inputs");
+    let circuit_str = std::fs::read_to_string("src/testdata/withdraw.json").expect("read circuit");
+    let input_str =
+        std::fs::read_to_string("src/testdata/withdraw_input_signals.json").expect("read inputs");
 
-    let circuit: Circuit = serde_json::from_slice(&circuit_bytes).expect("parse circuit");
+    let circuit = Circuit::from_json(&circuit_str).expect("parse circuit");
     let input_signals: HashMap<String, Value> =
-        serde_json::from_slice(&input_bytes).expect("parse inputs");
+        serde_json::from_str(&input_str).expect("parse inputs");
 
     let mut group = c.benchmark_group("witness");
     group.sample_size(20);

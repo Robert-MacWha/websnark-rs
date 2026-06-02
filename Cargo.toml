@@ -31,6 +31,7 @@ ark-bn254 = "0.6.0"
 ark-ec = "0.6.0"
 ark-ff = "0.6.0"
 ark-poly = "0.6.0"
+ark-serialize = "0.6.0"
 lalrpop-util = "0.23.1"
 num-bigint = { version = "0.4.6", features = ["serde"] }
 num-traits = "0.2.19"

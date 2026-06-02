@@ -1702,6 +1702,7 @@ dependencies = [
  "ark-ec",
  "ark-ff",
  "ark-poly",
+ "ark-serialize",
  "criterion",
  "insta",
  "lalrpop",
