@@ -1,0 +1,10 @@
+[package]
+name = "websnark-cli"
+version = "0.1.1"
+edition = "2024"
+description = ""
+license = "MIT"
+publish = false
+
+[dependencies]
+clap = "4.6.1"
