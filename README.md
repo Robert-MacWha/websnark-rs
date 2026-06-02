@@ -6,21 +6,20 @@ zk-SNARK proofs from artifacts produced by the Circom v1 compiler.
 ## Examples
 
 ```rust
-# use std::collections::HashMap;
-# use ark_bn254::Fr;
-# use ark_ff::AdditiveGroup;
-# use websnark_rs::circuit::{calculate_witness, Circuit, Value};
-# use websnark_rs::proof::generate_proof;
-# use websnark_rs::proving_key::{ProvingKey, ProvingKeyProcessed};
+use std::collections::HashMap;
+use ark_bn254::Fr;
+use ark_ff::AdditiveGroup;
+use websnark_rs::circuit::{calculate_witness, Circuit, Value};
+use websnark_rs::proof::generate_proof;
+use websnark_rs::proving_key::{ProvingKey};
 
-# let circuit_json = include_bytes!("src/testdata/withdraw.json");
-# let proving_key_json = include_str!("src/testdata/withdraw_proving_key.json");
-# let inputs_json = include_bytes!("src/testdata/withdraw_input_signals.json");
+let circuit_json = include_str!("src/testdata/withdraw.json");
+let proving_key_json = include_str!("src/testdata/withdraw_proving_key.json");
+let inputs_json = include_str!("src/testdata/withdraw_input_signals.json");
 
-let circuit: Circuit = serde_json::from_slice(circuit_json).unwrap();
+let circuit: Circuit = serde_json::from_str(circuit_json).unwrap();
 let pk: ProvingKey = serde_json::from_str(proving_key_json).unwrap();
-let pk: ProvingKeyProcessed = pk.into();
-let inputs: HashMap<String, Value> = serde_json::from_slice(inputs_json).unwrap();
+let inputs: HashMap<String, Value> = serde_json::from_str(inputs_json).unwrap();
 
 let witness = calculate_witness(circuit, inputs).unwrap();
 let (proof, pub_signals) = generate_proof(pk, witness, Fr::ZERO, Fr::ZERO).unwrap();
