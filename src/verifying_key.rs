@@ -1,62 +1,49 @@
 use ark_bn254::{G1Affine, G2Affine};
 use serde::{Deserialize, Serialize};
 
-use crate::utils::{parse_f2, parse_g1};
+use crate::serde::{
+    g1_json_serde, g1_serde, g1_vec_json_serde, g1_vec_serde, g2_json_serde, g2_serde,
+};
 
 /// CircomV1-compatible verifying key
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifyingKey {
+    #[serde(with = "g1_serde")]
     pub alpha: G1Affine,
+    #[serde(with = "g2_serde")]
     pub beta: G2Affine,
+    #[serde(with = "g2_serde")]
     pub gamma: G2Affine,
+    #[serde(with = "g2_serde")]
     pub delta: G2Affine,
+    #[serde(with = "g1_vec_serde")]
     pub ic: Vec<G1Affine>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct VerifyingKeyJson {
-    #[serde(rename = "vk_alfa_1")]
-    pub alpha: [String; 3],
-    #[serde(rename = "vk_beta_2")]
-    pub beta: [[String; 2]; 3],
-    #[serde(rename = "vk_gamma_2")]
-    pub gamma: [[String; 2]; 3],
-    #[serde(rename = "vk_delta_2")]
-    pub delta: [[String; 2]; 3],
-    #[serde(rename = "IC")]
-    pub ic: Vec<[String; 3]>,
-}
-
-impl<'de> Deserialize<'de> for VerifyingKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let vk_json = VerifyingKeyJson::deserialize(deserializer)?;
-        vk_json.try_into().map_err(serde::de::Error::custom)
-    }
-}
-
-impl TryFrom<VerifyingKeyJson> for VerifyingKey {
-    type Error = anyhow::Error;
-
-    fn try_from(value: VerifyingKeyJson) -> Result<Self, Self::Error> {
-        let alpha = parse_g1(value.alpha)?;
-        let beta = parse_f2(value.beta)?;
-        let gamma = parse_f2(value.gamma)?;
-        let delta = parse_f2(value.delta)?;
-
-        let mut ic = Vec::with_capacity(value.ic.len());
-        for point in value.ic {
-            ic.push(parse_g1(point)?);
-        }
-
+impl VerifyingKey {
+    /// Deserialize from the snarkjs JSON format (decimal string encoded fields).
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
+        let j: VerifyingKeyJson = serde_json::from_str(s)?;
         Ok(VerifyingKey {
-            alpha,
-            beta,
-            gamma,
-            delta,
-            ic,
+            alpha: j.alpha,
+            beta: j.beta,
+            gamma: j.gamma,
+            delta: j.delta,
+            ic: j.ic,
         })
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct VerifyingKeyJson {
+    #[serde(rename = "vk_alfa_1", with = "g1_json_serde")]
+    alpha: G1Affine,
+    #[serde(rename = "vk_beta_2", with = "g2_json_serde")]
+    beta: G2Affine,
+    #[serde(rename = "vk_gamma_2", with = "g2_json_serde")]
+    gamma: G2Affine,
+    #[serde(rename = "vk_delta_2", with = "g2_json_serde")]
+    delta: G2Affine,
+    #[serde(rename = "IC", with = "g1_vec_json_serde")]
+    ic: Vec<G1Affine>,
 }

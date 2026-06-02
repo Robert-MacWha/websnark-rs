@@ -6,7 +6,7 @@ mod circom;
 pub mod circuit;
 pub mod proof;
 pub mod proving_key;
-mod utils;
+mod serde;
 pub mod verifying_key;
 
 #[cfg(all(feature = "parallel", target_arch = "wasm32"))]

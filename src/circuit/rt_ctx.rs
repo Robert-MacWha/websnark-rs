@@ -322,7 +322,7 @@ mod tests {
 
     fn fixture() -> RTCtx {
         let data = include_str!("../testdata/withdraw.json");
-        let circuit: Circuit = serde_json::from_str(data).unwrap();
+        let circuit = Circuit::from_json(data).unwrap();
         RTCtx::new(circuit).unwrap()
     }
 

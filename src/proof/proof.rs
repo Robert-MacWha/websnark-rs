@@ -1,64 +1,37 @@
 use ark_bn254::{G1Affine, G2Affine};
 use serde::{Deserialize, Serialize};
 
-use crate::utils::{g1_to_string, g2_to_string, parse_f2, parse_g1};
+use crate::serde::{g1_json_serde, g1_serde, g2_json_serde, g2_serde};
 
 /// CircomV1-compatible zk-SNARK proof
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Proof {
+    #[serde(with = "g1_serde")]
     pub a: G1Affine,
+    #[serde(with = "g2_serde")]
     pub b: G2Affine,
+    #[serde(with = "g1_serde")]
     pub c: G1Affine,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+impl Proof {
+    /// Deserialize from the snarkjs JSON format (decimal string encoded fields).
+    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
+        let j: ProofJson = serde_json::from_str(s)?;
+        Ok(Proof {
+            a: j.a,
+            b: j.b,
+            c: j.c,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq)]
 struct ProofJson {
-    #[serde(rename = "pi_a")]
-    pub a: [String; 3],
-    #[serde(rename = "pi_b")]
-    pub b: [[String; 2]; 3],
-    #[serde(rename = "pi_c")]
-    pub c: [String; 3],
-}
-
-impl Serialize for Proof {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let proof_json: ProofJson = self.clone().into();
-        proof_json.serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Proof {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let proof_json = ProofJson::deserialize(deserializer)?;
-        proof_json.try_into().map_err(serde::de::Error::custom)
-    }
-}
-
-impl From<Proof> for ProofJson {
-    fn from(proof: Proof) -> Self {
-        let a = g1_to_string(proof.a);
-        let b = g2_to_string(proof.b);
-        let c = g1_to_string(proof.c);
-
-        ProofJson { a, b, c }
-    }
-}
-
-impl TryFrom<ProofJson> for Proof {
-    type Error = anyhow::Error;
-
-    fn try_from(value: ProofJson) -> Result<Self, Self::Error> {
-        let a = parse_g1(value.a)?;
-        let b = parse_f2(value.b)?;
-        let c = parse_g1(value.c)?;
-
-        Ok(Proof { a, b, c })
-    }
+    #[serde(rename = "pi_a", with = "g1_json_serde")]
+    a: G1Affine,
+    #[serde(rename = "pi_b", with = "g2_json_serde")]
+    b: G2Affine,
+    #[serde(rename = "pi_c", with = "g1_json_serde")]
+    c: G1Affine,
 }
