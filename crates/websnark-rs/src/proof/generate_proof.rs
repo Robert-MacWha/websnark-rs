@@ -9,6 +9,17 @@ use crate::{
     circuit::Witness, proof::fr_snarkjs::FrSnarkjs, proof::proof::Proof, proving_key::ProvingKey,
 };
 
+/// Generate a zk-SNARK groth16 proof for a given proving key and witness, using random scalars `r` and `s`.
+pub fn generate_random_proof(
+    pk: ProvingKey,
+    w: Witness,
+    rng: &mut impl rand::Rng,
+) -> Result<(Proof, Vec<Fr>), anyhow::Error> {
+    let r = Fr::rand(rng);
+    let s = Fr::rand(rng);
+    generate_proof(pk, w, r, s)
+}
+
 /// Generate a zk-SNARK groth16 proof for a given proving key, witness, and random scalars `r` and `s`.
 #[instrument(skip_all)]
 pub fn generate_proof(
