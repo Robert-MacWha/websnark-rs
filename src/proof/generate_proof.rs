@@ -152,7 +152,7 @@ mod tests {
         let witness = Witness::from_json(witness_data).unwrap();
 
         let proof_data = include_str!("../testdata/proof.json");
-        let expected_proof: Proof = Proof::from_json(proof_data).unwrap();
+        let expected_proof = Proof::from_json(proof_data).unwrap();
 
         let r = Fr::ZERO;
         let s = Fr::ZERO;
