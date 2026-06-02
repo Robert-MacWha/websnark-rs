@@ -94,14 +94,14 @@ impl Value {
         }
     }
 
-    pub(crate) fn into_u64(self) -> Result<u64, anyhow::Error> {
+    pub(crate) fn into_u32(self) -> Result<u32, anyhow::Error> {
         match self {
             Value::Fr(f) => f.into_bigint().as_ref()[0]
-                .to_u64()
-                .ok_or_else(|| anyhow!("selector out of u64 range")),
+                .to_u32()
+                .ok_or_else(|| anyhow!("selector out of u32 range")),
             Value::Number(n) => n
-                .to_u64()
-                .ok_or_else(|| anyhow!("selector out of u64 range")),
+                .to_u32()
+                .ok_or_else(|| anyhow!("selector out of u32 range")),
             Value::Array(_) => bail!("expected number, got array"),
         }
     }
