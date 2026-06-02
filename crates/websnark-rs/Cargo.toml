@@ -8,7 +8,7 @@ repository = "https://github.com/Robert-MacWha/websnark-rs"
 readme = "README.md"
 keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
-exclude = ["*/testdata/**/*"]
+exclude = ["*/testdata/**/*", ".gitignore"]
 
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]
