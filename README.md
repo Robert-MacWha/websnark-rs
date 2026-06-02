@@ -9,7 +9,7 @@ zk-SNARK proofs from artifacts produced by the Circom v1 compiler.
 use std::collections::HashMap;
 use ark_bn254::Fr;
 use ark_ff::AdditiveGroup;
-use websnark_rs::circuit::{calculate_witness, Circuit, Value};
+use websnark_rs::circuit::{generate_witness, Circuit, Value};
 use websnark_rs::proof::generate_proof;
 use websnark_rs::proving_key::{ProvingKey};
 
@@ -21,7 +21,7 @@ let circuit = Circuit::from_json(circuit_json).unwrap();
 let pk = ProvingKey::from_json(proving_key_json).unwrap();
 let inputs: HashMap<String, Value> = serde_json::from_str(inputs_json).unwrap();
 
-let witness = calculate_witness(circuit, inputs).unwrap();
+let witness = generate_witness(circuit, inputs).unwrap();
 let (proof, pub_signals) = generate_proof(pk, witness, Fr::ZERO, Fr::ZERO).unwrap();
 ```
 
