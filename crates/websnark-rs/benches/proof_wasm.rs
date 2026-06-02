@@ -6,8 +6,8 @@ use ark_ff::AdditiveGroup;
 use wasm_bindgen_test::{Criterion, Instant};
 use websnark_rs::{circuit::Witness, proof::generate_proof, proving_key::ProvingKey};
 
-const PK_BYTES: &[u8] = include_bytes!("../src/testdata/withdraw_proving_key.json");
-const WITNESS_BYTES: &[u8] = include_bytes!("../src/testdata/witness.json");
+const PK_JSON: &str = include_str!("../src/testdata/withdraw_proving_key.json");
+const WITNESS_JSON: &str = include_str!("../src/testdata/witness.json");
 
 /// Required because wasm-bindgen-test doesn't support setting sample_size on
 /// the criterion instance.
@@ -30,8 +30,8 @@ const _: () = {
 };
 
 fn bench_generate_proof(c: &mut Criterion) {
-    let pk: ProvingKey = serde_json::from_slice(PK_BYTES).expect("parse proving key");
-    let witness: Witness = serde_json::from_slice(WITNESS_BYTES).expect("parse witness");
+    let pk = ProvingKey::from_json(PK_JSON).expect("parse proving key");
+    let witness = Witness::from_json(WITNESS_JSON).expect("parse witness");
 
     let r = Fr::ZERO;
     let s = Fr::ZERO;
