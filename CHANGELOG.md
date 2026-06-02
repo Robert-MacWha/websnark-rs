@@ -1,3 +1,8 @@
+## [0.2.1] - 2026-06-02
+
+### 🐛 Bug Fixes
+
+- Result too large
 ## [0.2.0] - 2026-06-02
 
 ### 🚀 Features
@@ -18,6 +23,7 @@
 - Release v0.1.1
 - Add README simlink
 - Update justfile for multiple crates
+- Release v0.2.0
 ## [0.1.0] - 2026-05-30
 
 ### 🚀 Features
