@@ -38,3 +38,4 @@ jobs:
     - uses: Swatinem/rust-cache@v2
 
     - run: nix develop .#ci --command cargo check --target wasm32-unknown-unknown
+    - run: nix develop .#ci --command cargo bench --target wasm32-unknown-unknown

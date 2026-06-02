@@ -1,8 +1,9 @@
 {
-  description = "Tlock dev shell";
+  description = "Dev shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    oldNixPkgs.url = "github:NixOS/nixpkgs/ae5fe741ba9acade281a9185139e3922811c9696";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -15,6 +16,7 @@
     {
       self,
       nixpkgs,
+      oldNixPkgs,
       unstable,
       rust-overlay,
       flake-utils,
@@ -27,11 +29,19 @@
           overlays = [ rust-overlay.overlays.default ];
         };
 
+        oldPkgs = import oldNixPkgs {
+          inherit system;
+        };
+
+        nodejs14 = oldPkgs.nodejs_14.override {
+          python3 = oldPkgs.python39;
+        };
+
         unstablePkgs = import unstable {
           inherit system;
         };
 
-        rustToolchain = pkgs.rust-bin.stable."1.93.0".default.override {
+        rustToolchain = pkgs.rust-bin.nightly."2025-11-15".default.override {
           extensions = [
             "rust-src"
             "llvm-tools"
@@ -42,7 +52,7 @@
           ];
         };
 
-        rustfmtNightly = pkgs.rust-bin.nightly.latest.rustfmt;
+        rustfmtNightly = pkgs.rust-bin.nightly."2025-11-15".rustfmt;
       in
       {
         devShells = {
@@ -50,6 +60,13 @@
             packages = [
               rustToolchain
               rustfmtNightly
+
+              pkgs.nodejs
+              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.wasm-pack
+              pkgs.wabt
+              pkgs.binaryen
+              pkgs.geckodriver
 
               # CI
               pkgs.cargo-edit
@@ -62,6 +79,18 @@
             packages = [
               rustToolchain
               rustfmtNightly
+
+              pkgs.wasm-pack
+              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.nodejs
+            ];
+          };
+
+          # The CLI expects nodejs 14. It'll probably work with newer versions, but safer to use the correct version.
+          # Unfortunately it does takea a hot second to build
+          tc = pkgs.mkShell {
+            packages = [
+              nodejs14
             ];
           };
         };
