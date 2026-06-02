@@ -277,7 +277,7 @@ impl RTCtx {
 
     pub fn assert_eq(&self, a: &Fr, b: &Fr, err: &str) -> Result<(), CircuitError> {
         if a != b {
-            return Err(CircuitError::AssertionFailed(*a, *b, err.to_string()));
+            return Err(CircuitError::AssertionFailed(Box::new(*a), Box::new(*b), err.to_string()));
         }
         Ok(())
     }

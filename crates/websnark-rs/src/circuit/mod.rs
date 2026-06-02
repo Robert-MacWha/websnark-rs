@@ -25,7 +25,7 @@ pub enum CircuitError {
     #[error("value error: {0}")]
     ValueError(#[from] crate::circuit::value::ValueError),
     #[error("assertion failed: {0} != {1}: {2}")]
-    AssertionFailed(ark_bn254::Fr, ark_bn254::Fr, String),
+    AssertionFailed(Box<ark_bn254::Fr>, Box<ark_bn254::Fr>, String),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
