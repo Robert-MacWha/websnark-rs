@@ -17,8 +17,8 @@ let circuit_json = include_str!("src/testdata/withdraw.json");
 let proving_key_json = include_str!("src/testdata/withdraw_proving_key.json");
 let inputs_json = include_str!("src/testdata/withdraw_input_signals.json");
 
-let circuit: Circuit = serde_json::from_str(circuit_json).unwrap();
-let pk: ProvingKey = serde_json::from_str(proving_key_json).unwrap();
+let circuit = Circuit::from_json(circuit_json).unwrap();
+let pk = ProvingKey::from_json(proving_key_json).unwrap();
 let inputs: HashMap<String, Value> = serde_json::from_str(inputs_json).unwrap();
 
 let witness = calculate_witness(circuit, inputs).unwrap();
