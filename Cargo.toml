@@ -29,6 +29,7 @@ websnark-rs = { path = "crates/websnark-rs" }
 clap = "4.6.1"
 rand = "0.9"
 thiserror = "2"
+getrandom = "0.3"
 
 [profile.test]
 opt-level = 1

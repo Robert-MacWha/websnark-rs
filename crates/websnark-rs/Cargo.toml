@@ -1,6 +1,6 @@
 [package]
 name = "websnark-rs"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 description = "Circom v1 transpiler and proof generation library in Rust"
 license = "MIT"
@@ -49,6 +49,7 @@ tracing = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-rayon = { workspace = true, optional = true }
 wasm-bindgen-test = { workspace = true }
+getrandom = { workspace = true, features = ["wasm_js"] }
 
 [build-dependencies]
 lalrpop = { workspace = true }

@@ -689,9 +689,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi 5.3.0",
  "wasip2",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1850,7 +1852,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "clap",
  "postcard",
@@ -1859,7 +1861,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-rs"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "ark-bn254",
@@ -1869,6 +1871,7 @@ dependencies = [
  "ark-serialize",
  "ark-std",
  "criterion",
+ "getrandom 0.3.4",
  "insta",
  "lalrpop",
  "lalrpop-util",
