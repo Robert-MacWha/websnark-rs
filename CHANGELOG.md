@@ -1,10 +1,34 @@
-## [0.1.1] - 2026-05-30
+## [0.2.0] - 2026-06-03
+
+### 🚀 Features
+
+- Update serialization for artifacts (#2)
+- Add artifact converter bin (#3)
+- Differentiate error types
+
+### 🐛 Bug Fixes
+
+- Result too large
+
+### 📚 Documentation
+
+- Fix README
+
+### 🧪 Testing
+
+- Add benchmark for wasm32-unknown-unknown (#1)
 
 ### ⚙️ Miscellaneous Tasks
 
 - Add workflow_call to ci workflow
 - Add cargo-edit to auto-increment cargo.toml version
 - Add cargo.lock & cargo.toml in publish step
+- Release v0.1.1
+- Add README simlink
+- Update justfile for multiple crates
+- Release v0.2.0
+- Release v0.2.1
+- Add changelog to tag message
 ## [0.1.0] - 2026-05-30
 
 ### 🚀 Features

@@ -28,6 +28,7 @@ lalrpop = "0.23.1"
 websnark-rs = { path = "crates/websnark-rs" }
 clap = "4.6.1"
 rand_core = "0.6"
+thiserror = "2"
 
 [profile.test]
 opt-level = 1

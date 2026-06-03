@@ -26,12 +26,6 @@ impl Witness {
             .collect::<Result<_, _>>()?;
         Ok(Witness(frs))
     }
-
-    /// Serialize to the snarkjs JSON format (array of decimal strings).
-    pub fn to_json(&self) -> String {
-        let strings: Vec<String> = self.0.iter().map(|v| v.to_string()).collect();
-        serde_json::to_string(&strings).expect("infallible")
-    }
 }
 
 impl Serialize for Witness {

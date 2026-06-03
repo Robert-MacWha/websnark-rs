@@ -1,15 +1,18 @@
 use std::{fmt::Write, rc::Rc};
 
-use anyhow::{Context, Result, anyhow, bail};
 use ark_bn254::Fr;
 use num_bigint::BigInt;
-use num_traits::cast::ToPrimitive;
 use rustc_hash::FxHashMap;
 use tracing::{debug, trace};
 
 use crate::{
     circom::{ast::Function, parse_function},
-    circuit::{circuit::Circuit, interpreter::execute_function, value::Value},
+    circuit::{
+        CircuitError,
+        circuit::Circuit,
+        interpreter::execute_function,
+        value::{Value, ValueError},
+    },
 };
 
 /// Runtime context for witness generation.
@@ -30,7 +33,7 @@ pub struct RTCtx {
 }
 
 impl RTCtx {
-    pub fn new(circuit: Circuit) -> Result<Self> {
+    pub fn new(circuit: Circuit) -> Result<Self, CircuitError> {
         let n_signals = circuit.n_signals as usize;
         let not_init_signals = circuit
             .components
@@ -42,21 +45,25 @@ impl RTCtx {
             .templates
             .iter()
             .map(|(k, v)| {
-                let func =
-                    parse_function(v).with_context(|| format!("failed to parse template {k}"))?;
+                let func = parse_function(v).map_err(|e| CircuitError::ParseError {
+                    source: e,
+                    function: k.clone(),
+                })?;
                 Ok((k.clone(), Rc::new(func)))
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_, CircuitError>>()?;
 
         let functions = circuit
             .functions
             .iter()
             .map(|(k, v)| {
-                let func = parse_function(&v.func)
-                    .with_context(|| format!("failed to parse function {k}"))?;
+                let func = parse_function(&v.func).map_err(|e| CircuitError::ParseError {
+                    source: e,
+                    function: k.clone(),
+                })?;
                 Ok((k.clone(), Rc::new(func)))
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_, CircuitError>>()?;
 
         Ok(Self {
             circuit,
@@ -69,7 +76,12 @@ impl RTCtx {
         })
     }
 
-    pub fn set_signal(&mut self, name: &str, sels: Vec<Value>, value: Value) -> Result<()> {
+    pub fn set_signal(
+        &mut self,
+        name: &str,
+        sels: Vec<Value>,
+        value: Value,
+    ) -> Result<(), CircuitError> {
         let sels = into_numbers(sels)?;
         let value = value.into_fr()?;
 
@@ -77,7 +89,7 @@ impl RTCtx {
         self.set_signal_full(&full, value)
     }
 
-    pub fn get_signal(&self, name: &str, sels: Vec<Value>) -> Result<Value> {
+    pub fn get_signal(&self, name: &str, sels: Vec<Value>) -> Result<Value, CircuitError> {
         let sels = into_numbers(sels)?;
 
         let full = self.build_signal_name(name, sels)?;
@@ -91,7 +103,7 @@ impl RTCtx {
         signal_name: &str,
         signal_sels: Vec<Value>,
         value: Value,
-    ) -> Result<()> {
+    ) -> Result<(), CircuitError> {
         let component_sels = into_numbers(component_sels)?;
         let signal_sels = into_numbers(signal_sels)?;
         let value = value.into_fr()?;
@@ -106,7 +118,7 @@ impl RTCtx {
         component_sels: Vec<Value>,
         signal_name: &str,
         signal_sels: Vec<Value>,
-    ) -> Result<Value> {
+    ) -> Result<Value, CircuitError> {
         let component_sels = into_numbers(component_sels)?;
         let signal_sels = into_numbers(signal_sels)?;
 
@@ -114,12 +126,17 @@ impl RTCtx {
         self.get_signal_full(&full).map(Into::into)
     }
 
-    pub fn set_var(&mut self, name: &str, sels: Vec<Value>, value: Value) -> Result<Value> {
+    pub fn set_var(
+        &mut self,
+        name: &str,
+        sels: Vec<Value>,
+        value: Value,
+    ) -> Result<Value, CircuitError> {
         let sels = into_numbers(sels)?;
         let scope = self
             .scopes
             .last_mut()
-            .ok_or_else(|| anyhow!("no active scope"))?;
+            .ok_or_else(|| anyhow::anyhow!("No active scope"))?;
 
         if sels.is_empty() {
             scope.insert(name.to_string(), value.clone());
@@ -130,27 +147,27 @@ impl RTCtx {
             .entry(name.to_string())
             .or_insert_with(|| Value::Array(Vec::new()));
         let Value::Array(arr) = entry else {
-            bail!("variable {name} is not an array");
+            return Err(anyhow::anyhow!("Variable is not an array: {}", name).into());
         };
-        set_var_array(arr, &sels, value.clone())?;
+        set_var_array(arr, &sels, value.clone());
         Ok(value)
     }
 
-    pub fn get_var(&self, name: &str, sels: Vec<Value>) -> Result<Value> {
+    pub fn get_var(&self, name: &str, sels: Vec<Value>) -> Result<Value, CircuitError> {
         let sels = into_numbers(sels)?;
         for scope in self.scopes.iter().rev() {
             if let Some(v) = scope.get(name) {
                 return select(v, &sels).cloned();
             }
         }
-        bail!("variable not defined: {name}")
+        Err(anyhow::anyhow!("Variable not defined: {}", name).into())
     }
 
-    pub fn call_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value> {
-        bail!("TODO: function calls not implemented yet")
+    pub fn call_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value, CircuitError> {
+        Err(anyhow::anyhow!("call_function is not supported yet").into())
     }
 
-    pub fn trigger_component(&mut self, c: usize) -> Result<()> {
+    pub fn trigger_component(&mut self, c: usize) -> Result<(), CircuitError> {
         debug!("component triggered: {}", self.circuit.components[c].name);
         self.not_init_signals[c] -= 1;
 
@@ -168,8 +185,8 @@ impl RTCtx {
             .templates
             .get(&component.template)
             .ok_or_else(|| {
-                anyhow!(
-                    "template not found: {} for component {}",
+                anyhow::anyhow!(
+                    "Template not defined: {} for component {}",
                     component.template,
                     component.name
                 )
@@ -184,7 +201,7 @@ impl RTCtx {
         Ok(())
     }
 
-    fn build_signal_name(&self, name: &str, sels: Vec<u32>) -> Result<String, anyhow::Error> {
+    fn build_signal_name(&self, name: &str, sels: Vec<u32>) -> Result<String, CircuitError> {
         let mut s = if let Some(current) = &self.current_component {
             format!("{}.{}", current, name)
         } else {
@@ -200,7 +217,7 @@ impl RTCtx {
         component_sels: Vec<u32>,
         signal_name: &str,
         signal_sels: Vec<u32>,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<String, CircuitError> {
         let mut s = if component_name == "one" {
             "one".to_string()
         } else if let Some(current) = &self.current_component {
@@ -215,21 +232,25 @@ impl RTCtx {
         Ok(s)
     }
 
-    fn signal_idx(&self, full: &str) -> Result<usize> {
+    fn signal_idx(&self, full: &str) -> Result<usize, CircuitError> {
         if let Some(&idx) = self.circuit.signal_name2_idx.get(full) {
             return Ok(idx as usize);
         }
-        full.parse::<usize>()
-            .with_context(|| format!("invalid signal identifier: {full}"))
+        Ok(full
+            .parse::<usize>()
+            .map_err(|e| anyhow::anyhow!("Invalid signal index: {}", e))?)
     }
 
-    fn get_signal_full(&self, full: &str) -> Result<Fr> {
+    fn get_signal_full(&self, full: &str) -> Result<Fr, CircuitError> {
         trace!("get {full}");
         let s_id = self.signal_idx(full)?;
-        self.witness[s_id].ok_or_else(|| anyhow!("signal not initialized: {full}"))
+        Ok(
+            self.witness[s_id]
+                .ok_or_else(|| anyhow::anyhow!("Signal not initialized: {}", full))?,
+        )
     }
 
-    fn set_signal_full(&mut self, full: &str, value: Fr) -> Result<()> {
+    fn set_signal_full(&mut self, full: &str, value: Fr) -> Result<(), CircuitError> {
         trace!("set {full} = {value}");
         let s_id = self.signal_idx(full)?;
         let first_init = self.witness[s_id].is_none();
@@ -254,35 +275,29 @@ impl RTCtx {
         Ok(())
     }
 
-    pub fn assert_eq(&self, a: &Fr, b: &Fr, err: &str) -> Result<()> {
+    pub fn assert_eq(&self, a: &Fr, b: &Fr, err: &str) -> Result<(), CircuitError> {
         if a != b {
-            bail!(
-                "constraint doesn't match {:?}: {err} -> {} != {}",
-                self.current_component,
-                a,
-                b
-            );
+            return Err(CircuitError::AssertionFailed(Box::new(*a), Box::new(*b), err.to_string()));
         }
         Ok(())
     }
 }
 
-fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>> {
-    vals.into_iter()
+fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>, CircuitError> {
+    Ok(vals
+        .into_iter()
         .map(|v| v.into_u32())
-        .collect::<Result<Vec<_>>>()
+        .collect::<Result<Vec<_>, ValueError>>()?)
 }
 
-fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) -> Result<()> {
-    let idx = sels[0]
-        .to_usize()
-        .ok_or_else(|| anyhow!("bad var index: {}", sels[0]))?;
+fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) {
+    let idx = sels[0] as usize;
     while a.len() <= idx {
         a.push(Value::Number(BigInt::ZERO));
     }
     if sels.len() == 1 {
         a[idx] = value;
-        return Ok(());
+        return;
     }
     if !matches!(a[idx], Value::Array(_)) {
         a[idx] = Value::Array(Vec::new());
@@ -293,25 +308,24 @@ fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) -> Result<()> {
     set_var_array(nested, &sels[1..], value)
 }
 
-fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value> {
+fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value, CircuitError> {
     if sels.is_empty() {
         return Ok(a);
     }
     let Value::Array(arr) = a else {
-        bail!("cannot index non-array variable");
+        return Err(CircuitError::ValueError(ValueError::ExpectedArray));
     };
-    let idx = sels[0]
-        .to_usize()
-        .ok_or_else(|| anyhow!("bad var index: {}", sels[0]))?;
+    let idx = sels[0] as usize;
     let next = arr
         .get(idx)
-        .ok_or_else(|| anyhow!("var index out of bounds: {idx} >= {}", arr.len()))?;
+        .ok_or_else(|| CircuitError::ValueError(ValueError::ValueOutOfRange))?;
     select(next, &sels[1..])
 }
 
-fn append_sels(out: &mut String, sels: Vec<u32>) -> Result<(), anyhow::Error> {
+fn append_sels(out: &mut String, sels: Vec<u32>) -> Result<(), CircuitError> {
     for s in sels {
-        write!(out, "[{}]", s)?;
+        write!(out, "[{}]", s)
+            .map_err(|e| anyhow::anyhow!("Failed to build signal name: {}", e))?;
     }
     Ok(())
 }

@@ -1,6 +1,6 @@
 [package]
 name = "websnark-rs"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 description = "Circom v1 transpiler and proof generation library in Rust"
 license = "MIT"
@@ -8,7 +8,7 @@ repository = "https://github.com/Robert-MacWha/websnark-rs"
 readme = "README.md"
 keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
-exclude = ["*/testdata/**/*"]
+exclude = ["*/testdata/**/*", ".gitignore"]
 
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]
@@ -42,6 +42,7 @@ rand_core = { workspace = true }
 rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

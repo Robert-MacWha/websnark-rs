@@ -1803,7 +1803,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-cli"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "clap",
  "postcard",
@@ -1812,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-rs"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ark-bn254",
@@ -1831,6 +1831,7 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
+ "thiserror",
  "tracing",
  "tracing-test",
  "wasm-bindgen",

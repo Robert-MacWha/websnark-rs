@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use ark_bn254::Fr;
 use ark_ff::{Field, PrimeField};
 use num_bigint::BigInt;
@@ -7,7 +6,7 @@ use tracing::info;
 
 use crate::{
     circom::ast::{BinOpKind, Expr, Function, Stmt},
-    circuit::{Value, rt_ctx::RTCtx},
+    circuit::{CircuitError, Value, rt_ctx::RTCtx},
 };
 
 const PRIME: &str = "21888242871839275222246405745257275088548364400416034343698204186575808495617";
@@ -26,11 +25,11 @@ fn bigint_mask() -> &'static BigInt {
 }
 
 /// Executes a function and returns its return value, or zero if it doesn't return anything.
-pub fn execute_function(ctx: &mut RTCtx, func: &Function) -> Result<Value, anyhow::Error> {
+pub fn execute_function(ctx: &mut RTCtx, func: &Function) -> Result<Value, CircuitError> {
     Ok(execute_block(ctx, &func.body)?.unwrap_or(Value::Number(BigInt::ZERO)))
 }
 
-fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, anyhow::Error> {
+fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, CircuitError> {
     match stmt {
         Stmt::Block(statements) => execute_block(ctx, statements),
         Stmt::Expr(expr) => {
@@ -83,7 +82,7 @@ fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, anyhow::E
     }
 }
 
-fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
+fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
     match expr {
         Expr::NumberLit(fr) => Ok(Value::Fr(*fr)),
         Expr::PrimeConst => Ok(bigint_prime().clone().into()),
@@ -183,7 +182,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
             // }
 
             base.inverse()
-                .ok_or(anyhow!("No modular inverse exists"))
+                .ok_or(anyhow::anyhow!("No modular inverse exists").into())
                 .map(|inv| inv.into())
         }
         Expr::ModPow(base, exp, _modulos) => {
@@ -217,7 +216,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, anyhow::Error> {
 }
 
 /// Executes a block of statements and returns the value of the first return statement, if any.
-fn execute_block(ctx: &mut RTCtx, stmts: &[Stmt]) -> Result<Option<Value>, anyhow::Error> {
+fn execute_block(ctx: &mut RTCtx, stmts: &[Stmt]) -> Result<Option<Value>, CircuitError> {
     for s in stmts {
         if let Some(v) = execute_stmt(ctx, s)? {
             return Ok(Some(v));
@@ -227,7 +226,7 @@ fn execute_block(ctx: &mut RTCtx, stmts: &[Stmt]) -> Result<Option<Value>, anyho
 }
 
 /// Executes a list of expressions and returns their results.
-fn execute_exprs(ctx: &mut RTCtx, exprs: &[Expr]) -> Result<Vec<Value>, anyhow::Error> {
+fn execute_exprs(ctx: &mut RTCtx, exprs: &[Expr]) -> Result<Vec<Value>, CircuitError> {
     let mut res = Vec::with_capacity(exprs.len());
     for expr in exprs {
         res.push(execute_expr(ctx, expr)?);
@@ -236,6 +235,6 @@ fn execute_exprs(ctx: &mut RTCtx, exprs: &[Expr]) -> Result<Vec<Value>, anyhow::
 }
 
 /// Returns true if the given value is "truthy" (not zero).
-fn is_truthy(v: &Value) -> Result<bool, anyhow::Error> {
+fn is_truthy(v: &Value) -> Result<bool, CircuitError> {
     Ok(!v.is_zero()?)
 }

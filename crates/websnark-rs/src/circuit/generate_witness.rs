@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    circuit::witness::Witness,
-    circuit::{Circuit, rt_ctx::RTCtx, value::Value},
-};
-use anyhow::{Result, bail};
+use crate::circuit::{Circuit, CircuitError, rt_ctx::RTCtx, value::Value, witness::Witness};
 use ark_bn254::Fr;
 use num_bigint::BigInt;
 use tracing::instrument;
@@ -16,7 +12,7 @@ use tracing::instrument;
 pub fn generate_witness(
     circuit: Circuit,
     input_signals: HashMap<String, Value>,
-) -> Result<Witness> {
+) -> Result<Witness, CircuitError> {
     let mut ctx = RTCtx::new(circuit)?;
     ctx.set_signal("one", vec![], 1.into())?;
 
@@ -34,26 +30,28 @@ pub fn generate_witness(
     for i in 0..ctx.circuit.n_inputs {
         let idx = ctx.circuit.input_idx(i)?;
         if ctx.witness[idx as usize].is_none() {
-            bail!(
+            return Err(anyhow::anyhow!(
                 "input signal not assigned: {}",
                 ctx.circuit.signal_names(i)?
-            );
+            )
+            .into());
         }
     }
 
     for i in 0..ctx.witness.len() {
         if ctx.witness[i].is_none() {
-            bail!(
+            return Err(anyhow::anyhow!(
                 "signal not assigned: {}",
                 ctx.circuit.signal_names(i as u64)?
             )
+            .into());
         }
     }
 
     let output = ctx.witness[..ctx.circuit.n_vars as usize]
         .iter()
-        .map(|v| (*v).ok_or(anyhow::anyhow!("signal not assigned")))
-        .collect::<Result<Vec<Fr>>>()?;
+        .map(|v| (*v).ok_or(anyhow::anyhow!("signal not assigned").into()))
+        .collect::<Result<Vec<Fr>, CircuitError>>()?;
     Ok(Witness::new(output))
 }
 
@@ -62,7 +60,7 @@ fn iterate_selector(
     name: &str,
     values: Value,
     sels: &mut Vec<BigInt>,
-) -> Result<()> {
+) -> Result<(), CircuitError> {
     match values {
         Value::Number(_) => {
             ctx.set_signal(

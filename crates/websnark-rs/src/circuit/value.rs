@@ -1,9 +1,7 @@
 use std::fmt::Display;
 
-use anyhow::{anyhow, bail};
 use ark_bn254::Fr;
 use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use num_bigint::BigInt;
 use num_traits::ToPrimitive;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
@@ -21,117 +19,53 @@ pub enum Value {
     Array(Vec<Value>),
 }
 
-/// Binary-compatible representation of Value (used for Circuit binary serde).
-/// Number is normalised to Fr at serialization time.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) enum BinValue {
-    Fr(Vec<u8>),
-    Array(Vec<BinValue>),
-}
-
-impl TryFrom<&Value> for BinValue {
-    type Error = anyhow::Error;
-
-    fn try_from(v: &Value) -> Result<Self, Self::Error> {
-        match v {
-            Value::Fr(fr) => {
-                let mut bytes = Vec::new();
-                fr.serialize_uncompressed(&mut bytes)?;
-                Ok(BinValue::Fr(bytes))
-            }
-            Value::Number(n) => {
-                let fr = bigint_to_fr(n);
-                let mut bytes = Vec::new();
-                fr.serialize_uncompressed(&mut bytes)?;
-                Ok(BinValue::Fr(bytes))
-            }
-            Value::Array(items) => {
-                let bin_items = items
-                    .iter()
-                    .map(BinValue::try_from)
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(BinValue::Array(bin_items))
-            }
-        }
-    }
-}
-
-impl TryFrom<BinValue> for Value {
-    type Error = anyhow::Error;
-
-    fn try_from(v: BinValue) -> Result<Self, Self::Error> {
-        match v {
-            BinValue::Fr(bytes) => {
-                let fr = Fr::deserialize_uncompressed_unchecked(&bytes[..])
-                    .map_err(|e| anyhow!("{}", e))?;
-                Ok(Value::Fr(fr))
-            }
-            BinValue::Array(items) => {
-                let vals = items
-                    .into_iter()
-                    .map(Value::try_from)
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(Value::Array(vals))
-            }
-        }
-    }
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum ValueError {
+    #[error("expected number")]
+    ExpectedNumber,
+    #[error("expected array")]
+    ExpectedArray,
+    #[error("invalid number: {0}")]
+    InvalidNumber(String),
+    #[error("value out of range")]
+    ValueOutOfRange,
 }
 
 impl Value {
-    pub(crate) fn into_fr(self) -> Result<Fr, anyhow::Error> {
+    pub(crate) fn into_fr(self) -> Result<Fr, ValueError> {
         match self {
             Value::Fr(f) => Ok(f),
             Value::Number(b) => Ok(bigint_to_fr(&b)),
-            Value::Array(_) => bail!("expected number, got array"),
+            Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
 
-    pub(crate) fn into_number(self) -> Result<BigInt, anyhow::Error> {
+    pub(crate) fn into_number(self) -> Result<BigInt, ValueError> {
         match self {
             Value::Number(b) => Ok(b),
             Value::Fr(f) => Ok(fr_to_bigint(f)),
-            Value::Array(_) => bail!("expected number, got array"),
+            Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
 
-    pub(crate) fn into_u32(self) -> Result<u32, anyhow::Error> {
+    pub(crate) fn into_u32(self) -> Result<u32, ValueError> {
         match self {
             Value::Fr(f) => f.into_bigint().as_ref()[0]
                 .to_u32()
-                .ok_or_else(|| anyhow!("selector out of u32 range")),
+                .ok_or_else(|| ValueError::InvalidNumber(f.to_string())),
             Value::Number(n) => n
                 .to_u32()
-                .ok_or_else(|| anyhow!("selector out of u32 range")),
-            Value::Array(_) => bail!("expected number, got array"),
+                .ok_or_else(|| ValueError::InvalidNumber(n.to_string())),
+            Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
 
-    pub(crate) fn is_zero(&self) -> Result<bool, anyhow::Error> {
+    pub(crate) fn is_zero(&self) -> Result<bool, ValueError> {
         match self {
             Value::Fr(f) => Ok(f == &Fr::ZERO),
             Value::Number(b) => Ok(b == &BigInt::ZERO),
-            Value::Array(_) => bail!("expected number, got array"),
-        }
-    }
-
-    /// Parse a Value from a serde_json value (the snarkjs decimal-string format).
-    pub(crate) fn from_json(v: &JsonValue) -> Result<Self, String> {
-        match v {
-            JsonValue::Number(n) => {
-                let s = n.to_string();
-                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
-                Ok(Value::Number(big))
-            }
-            JsonValue::String(s) => {
-                // Fallback for large numbers serialized as strings
-                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
-                Ok(Value::Number(big))
-            }
-            JsonValue::Array(arr) => {
-                let items = arr.iter().map(Self::from_json).collect::<Result<_, _>>()?;
-                Ok(Value::Array(items))
-            }
-            other => Err(format!("expected number or array, got {other}")),
+            Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
 }
@@ -202,6 +136,28 @@ impl<'de> Deserialize<'de> for Value {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let raw = JsonValue::deserialize(d)?;
         Self::from_json(&raw).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Value {
+    fn from_json(v: &JsonValue) -> Result<Self, String> {
+        match v {
+            JsonValue::Number(n) => {
+                let s = n.to_string();
+                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
+                Ok(Value::Number(big))
+            }
+            JsonValue::String(s) => {
+                // Fallback for large numbers serialized as strings
+                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
+                Ok(Value::Number(big))
+            }
+            JsonValue::Array(arr) => {
+                let items = arr.iter().map(Self::from_json).collect::<Result<_, _>>()?;
+                Ok(Value::Array(items))
+            }
+            other => Err(format!("expected number or array, got {other}")),
+        }
     }
 }
 

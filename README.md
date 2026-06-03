@@ -13,9 +13,9 @@ use websnark_rs::circuit::{generate_witness, Circuit, Value};
 use websnark_rs::proof::generate_proof;
 use websnark_rs::proving_key::{ProvingKey};
 
-let circuit_json = include_str!("crates/websnark-rs/src/testdata/withdraw.json");
-let proving_key_json = include_str!("crates/websnark-rs/src/testdata/withdraw_proving_key.json");
-let inputs_json = include_str!("crates/websnark-rs/src/testdata/withdraw_input_signals.json");
+let circuit_json = include_str!("src/testdata/withdraw.json");
+let proving_key_json = include_str!("src/testdata/withdraw_proving_key.json");
+let inputs_json = include_str!("src/testdata/withdraw_input_signals.json");
 
 let circuit = Circuit::from_json(circuit_json).unwrap();
 let pk = ProvingKey::from_json(proving_key_json).unwrap();
