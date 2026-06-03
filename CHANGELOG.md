@@ -1,3 +1,14 @@
+## [0.3.1] - 2026-06-03
+
+### 🐛 Bug Fixes
+
+- Upgrade rand dep & manually generate fr values
+
+### ⚙️ Miscellaneous Tasks
+
+- Linter
+- Clippy
+- Add getrandom feature flag
 ## [0.3.0] - 2026-06-03
 
 ### 🚀 Features
@@ -7,6 +18,7 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Revert release tag message to "Release: n"
+- Release v0.3.0
 ## [0.2.0] - 2026-06-03
 
 ### 🚀 Features
