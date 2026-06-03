@@ -13,5 +13,5 @@ publish:
     git add crates/websnark-rs/Cargo.toml
     git add crates/websnark-cli/Cargo.toml
     git commit -m "chore: release $(git cliff --bumped-version)"
-    git tag "$(git cliff --bumped-version)" -m "Release $(git cliff --bumped-version)"
+    git tag "$(git cliff --bumped-version)" -m "$(awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md)"
     git push && git push --tags 
