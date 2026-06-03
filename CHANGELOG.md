@@ -1,3 +1,12 @@
+## [0.3.0] - 2026-06-03
+
+### 🚀 Features
+
+- Add generate_random_proof & rename calculate_witness to generate_witness (#4)
+
+### ⚙️ Miscellaneous Tasks
+
+- Revert release tag message to "Release: n"
 ## [0.2.0] - 2026-06-03
 
 ### 🚀 Features
@@ -29,6 +38,7 @@
 - Release v0.2.0
 - Release v0.2.1
 - Add changelog to tag message
+- Release v0.2.0
 ## [0.1.0] - 2026-05-30
 
 ### 🚀 Features
