@@ -3,6 +3,7 @@ use ark_bn254::{Fr, G1Projective, G2Projective};
 use ark_ec::{CurveGroup, VariableBaseMSM};
 use ark_ff::{AdditiveGroup, PrimeField, UniformRand};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
+use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
 use crate::{
@@ -15,10 +16,15 @@ use crate::{
 pub fn generate_random_proof(
     pk: ProvingKey,
     w: Witness,
-    rng: &mut impl rand_core::RngCore,
+    rng: &mut (impl RngCore + CryptoRng),
 ) -> Result<(Proof, Vec<Fr>), ProofError> {
-    let r = Fr::rand(rng);
-    let s = Fr::rand(rng);
+    let mut bytes = [0u8; 32];
+
+    rng.fill_bytes(&mut bytes);
+    let r = Fr::from_le_bytes_mod_order(&bytes);
+
+    rng.fill_bytes(&mut bytes);
+    let s = Fr::from_le_bytes_mod_order(&bytes);
     generate_proof(pk, w, r, s)
 }
 

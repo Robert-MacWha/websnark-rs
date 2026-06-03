@@ -27,7 +27,7 @@ wasm-bindgen-test = "=0.3.68"
 lalrpop = "0.23.1"
 websnark-rs = { path = "crates/websnark-rs" }
 clap = "4.6.1"
-rand_core = "0.6"
+rand = "0.9"
 thiserror = "2"
 
 [profile.test]
