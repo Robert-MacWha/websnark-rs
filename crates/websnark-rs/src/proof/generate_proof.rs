@@ -1,7 +1,7 @@
 use anyhow::Context;
 use ark_bn254::{Fr, G1Projective, G2Projective};
 use ark_ec::{CurveGroup, VariableBaseMSM};
-use ark_ff::{AdditiveGroup, PrimeField, UniformRand};
+use ark_ff::{AdditiveGroup, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
