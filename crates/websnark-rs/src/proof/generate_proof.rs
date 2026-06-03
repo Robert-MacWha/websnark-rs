@@ -16,7 +16,7 @@ pub fn generate_random_proof(
     pk: ProvingKey,
     w: Witness,
     rng: &mut impl rand_core::RngCore,
-) -> Result<(Proof, Vec<Fr>), anyhow::Error> {
+) -> Result<(Proof, Vec<Fr>), ProofError> {
     let r = Fr::rand(rng);
     let s = Fr::rand(rng);
     generate_proof(pk, w, r, s)
