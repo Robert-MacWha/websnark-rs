@@ -5,11 +5,11 @@ use ark_bn254::Fr;
 use num_bigint::BigInt;
 use tracing::instrument;
 
-/// Calculate the witness for a given circuit and input signals.
+/// Generate the witness for a given circuit and input signals.
 ///
 /// The `input_signals` map should contain the named input values for the circuit.
 #[instrument(skip_all)]
-pub fn calculate_witness(
+pub fn generate_witness(
     circuit: Circuit,
     input_signals: HashMap<String, Value>,
 ) -> Result<Witness, CircuitError> {
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     #[tracing_test::traced_test]
-    fn test_calculate_witness() {
+    fn test_generate_witness() {
         let circuit_data = include_str!("../testdata/withdraw.json");
         let circuit = Circuit::from_json(circuit_data).unwrap();
 
@@ -104,7 +104,7 @@ mod tests {
         let expected_witness_data = include_str!("../testdata/witness.json");
         let expected_witness = Witness::from_json(expected_witness_data).unwrap();
 
-        let witness = calculate_witness(circuit, input_signals).unwrap();
+        let witness = generate_witness(circuit, input_signals).unwrap();
         assert_eq!(witness, expected_witness);
     }
 }

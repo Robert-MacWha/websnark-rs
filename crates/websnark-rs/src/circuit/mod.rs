@@ -1,15 +1,15 @@
 //! Circuit definition and witness generation.
 
-mod calculate_witness;
 #[allow(clippy::module_inception)]
 mod circuit;
+mod generate_witness;
 mod interpreter;
 mod rt_ctx;
 pub(crate) mod value;
 mod witness;
 
-pub use calculate_witness::calculate_witness;
 pub use circuit::{Circuit, Component, Function, Signal};
+pub use generate_witness::generate_witness;
 pub use value::{Value, ValueError};
 pub use witness::Witness;
 

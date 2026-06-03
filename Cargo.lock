@@ -1827,6 +1827,7 @@ dependencies = [
  "lalrpop-util",
  "num-bigint",
  "num-traits",
+ "rand_core",
  "rustc-hash",
  "serde",
  "serde_json",
