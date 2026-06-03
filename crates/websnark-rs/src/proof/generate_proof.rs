@@ -13,7 +13,7 @@ use crate::{
 pub fn generate_random_proof(
     pk: ProvingKey,
     w: Witness,
-    rng: &mut impl rand::Rng,
+    rng: &mut impl rand_core::RngCore,
 ) -> Result<(Proof, Vec<Fr>), anyhow::Error> {
     let r = Fr::rand(rng);
     let s = Fr::rand(rng);
