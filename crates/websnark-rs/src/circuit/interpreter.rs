@@ -2,7 +2,6 @@ use ark_bn254::Fr;
 use ark_ff::{Field, PrimeField};
 use num_bigint::BigInt;
 use std::sync::OnceLock;
-use tracing::info;
 
 use crate::{
     circom::ast::{BinOpKind, Expr, Function, Stmt},
@@ -159,13 +158,11 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
                 BinOpKind::Gt => Ok((lhs.into_fr()? > rhs.into_fr()?).into()),
                 BinOpKind::And => Ok((lhs.into_number()? & rhs.into_number()?).into()),
                 BinOpKind::Shl => {
-                    info!("Shifting left by {} bits", rhs);
                     let lhs = lhs.into_fr()?.into_bigint();
                     let n = rhs.into_u32()?;
                     Ok(Fr::from(lhs << n).into())
                 }
                 BinOpKind::Shr => {
-                    info!("Shifting right by {} bits", rhs);
                     let lhs = lhs.into_fr()?.into_bigint();
                     let n = rhs.into_u32()?;
                     Ok(Fr::from(lhs >> n).into())
