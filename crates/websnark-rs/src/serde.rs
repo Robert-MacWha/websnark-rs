@@ -1,230 +1,264 @@
-use std::collections::HashMap;
-
 use anyhow::anyhow;
 use ark_bn254::{Fq, Fq2, Fr, G1Affine, G2Affine};
 use ark_ec::AffineRepr;
+use ark_ff::PrimeField;
+use std::collections::HashMap;
 use std::str::FromStr;
 
 pub mod g1_serde {
     use ark_bn254::G1Affine;
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &G1Affine, s: S) -> Result<S::Ok, S::Error> {
-        let mut bytes = Vec::new();
-        v.serialize_uncompressed(&mut bytes)
-            .map_err(serde::ser::Error::custom)?;
-        s.serialize_bytes(&bytes)
+        if s.is_human_readable() {
+            super::g1_to_string(*v).serialize(s)
+        } else {
+            super::g1_to_bytes(*v).serialize(s)
+        }
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G1Affine, D::Error> {
-        let bytes = Vec::<u8>::deserialize(d)?;
-        G1Affine::deserialize_uncompressed_unchecked(&bytes[..]).map_err(serde::de::Error::custom)
+        if d.is_human_readable() {
+            let arr = <[String; 3]>::deserialize(d)?;
+            super::parse_g1(arr).map_err(serde::de::Error::custom)
+        } else {
+            let bytes = Vec::<u8>::deserialize(d)?;
+            super::g1_from_bytes(&bytes).map_err(serde::de::Error::custom)
+        }
     }
 }
 
 pub mod g2_serde {
     use ark_bn254::G2Affine;
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &G2Affine, s: S) -> Result<S::Ok, S::Error> {
-        let mut bytes = Vec::new();
-        v.serialize_uncompressed(&mut bytes)
-            .map_err(serde::ser::Error::custom)?;
-        s.serialize_bytes(&bytes)
+        if s.is_human_readable() {
+            super::g2_to_string(*v).serialize(s)
+        } else {
+            super::g2_to_bytes(*v).serialize(s)
+        }
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G2Affine, D::Error> {
-        let bytes = Vec::<u8>::deserialize(d)?;
-        G2Affine::deserialize_uncompressed_unchecked(&bytes[..]).map_err(serde::de::Error::custom)
+        if d.is_human_readable() {
+            let arr = <[[String; 2]; 3]>::deserialize(d)?;
+            super::parse_f2(arr).map_err(serde::de::Error::custom)
+        } else {
+            let bytes = Vec::<u8>::deserialize(d)?;
+            super::g2_from_bytes(&bytes).map_err(serde::de::Error::custom)
+        }
     }
 }
 
 pub mod g1_vec_serde {
     use ark_bn254::G1Affine;
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use serde::{Deserialize, Deserializer, Serializer, ser::SerializeSeq};
+    use ark_ec::AffineRepr;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
 
     pub fn serialize<S: Serializer>(v: &[G1Affine], s: S) -> Result<S::Ok, S::Error> {
-        let mut seq = s.serialize_seq(Some(v.len()))?;
-        for p in v {
-            let mut bytes = Vec::new();
-            p.serialize_uncompressed(&mut bytes)
-                .map_err(serde::ser::Error::custom)?;
-            seq.serialize_element(bytes.as_slice())?;
+        if s.is_human_readable() {
+            let strs: Vec<[String; 3]> = v.iter().map(|p| super::g1_to_string(*p)).collect();
+            strs.serialize(s)
+        } else {
+            let mut seq = s.serialize_seq(Some(v.len()))?;
+            for p in v {
+                seq.serialize_element(&super::g1_to_bytes(*p))?;
+            }
+            seq.end()
         }
-        seq.end()
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<G1Affine>, D::Error> {
-        let vecs = Vec::<Vec<u8>>::deserialize(d)?;
-        vecs.into_iter()
-            .map(|bytes| {
-                G1Affine::deserialize_uncompressed_unchecked(&bytes[..])
-                    .map_err(serde::de::Error::custom)
-            })
-            .collect()
+        if d.is_human_readable() {
+            let arrs = Vec::<Option<[String; 3]>>::deserialize(d)?;
+            arrs.into_iter()
+                .map(|opt| match opt {
+                    Some(arr) => super::parse_g1(arr).map_err(serde::de::Error::custom),
+                    None => Ok(G1Affine::zero()),
+                })
+                .collect()
+        } else {
+            let vecs = Vec::<Vec<u8>>::deserialize(d)?;
+            vecs.into_iter()
+                .map(|bytes| super::g1_from_bytes(&bytes).map_err(serde::de::Error::custom))
+                .collect()
+        }
     }
 }
 
 pub mod g2_vec_serde {
     use ark_bn254::G2Affine;
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use serde::{Deserialize, Deserializer, Serializer, ser::SerializeSeq};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
 
     pub fn serialize<S: Serializer>(v: &[G2Affine], s: S) -> Result<S::Ok, S::Error> {
-        let mut seq = s.serialize_seq(Some(v.len()))?;
-        for p in v {
-            let mut bytes = Vec::new();
-            p.serialize_uncompressed(&mut bytes)
-                .map_err(serde::ser::Error::custom)?;
-            seq.serialize_element(bytes.as_slice())?;
+        if s.is_human_readable() {
+            let strs: Vec<[[String; 2]; 3]> = v.iter().map(|p| super::g2_to_string(*p)).collect();
+            strs.serialize(s)
+        } else {
+            let mut seq = s.serialize_seq(Some(v.len()))?;
+            for p in v {
+                seq.serialize_element(&super::g2_to_bytes(*p))?;
+            }
+            seq.end()
         }
-        seq.end()
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<G2Affine>, D::Error> {
-        let vecs = Vec::<Vec<u8>>::deserialize(d)?;
-        vecs.into_iter()
-            .map(|bytes| {
-                G2Affine::deserialize_uncompressed_unchecked(&bytes[..])
-                    .map_err(serde::de::Error::custom)
-            })
-            .collect()
+        if d.is_human_readable() {
+            let arrs = Vec::<[[String; 2]; 3]>::deserialize(d)?;
+            arrs.into_iter()
+                .map(|arr| super::parse_f2(arr).map_err(serde::de::Error::custom))
+                .collect()
+        } else {
+            let vecs = Vec::<Vec<u8>>::deserialize(d)?;
+            vecs.into_iter()
+                .map(|bytes| super::g2_from_bytes(&bytes).map_err(serde::de::Error::custom))
+                .collect()
+        }
     }
 }
 
 pub mod fr_map_vec_serde {
+    use ark_bn254::Fr;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
     use std::collections::HashMap;
 
-    use ark_bn254::Fr;
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use serde::{Deserialize, Deserializer, Serializer, ser::SerializeSeq};
-
     pub fn serialize<S: Serializer>(v: &[HashMap<u64, Fr>], s: S) -> Result<S::Ok, S::Error> {
-        let mut outer = s.serialize_seq(Some(v.len()))?;
-        for map in v {
-            let mut pairs: Vec<(u64, Vec<u8>)> = Vec::with_capacity(map.len());
-            for (&k, fr) in map {
-                let mut bytes = Vec::new();
-                fr.serialize_uncompressed(&mut bytes)
-                    .map_err(serde::ser::Error::custom)?;
-                pairs.push((k, bytes));
+        if s.is_human_readable() {
+            let string_maps: Vec<HashMap<u64, String>> = v
+                .iter()
+                .map(|map| map.iter().map(|(&k, fr)| (k, fr.to_string())).collect())
+                .collect();
+            string_maps.serialize(s)
+        } else {
+            let mut outer = s.serialize_seq(Some(v.len()))?;
+            for map in v {
+                let pairs: Vec<(u64, [u8; 32])> = map
+                    .iter()
+                    .map(|(&k, fr)| (k, super::fr_to_bytes(*fr)))
+                    .collect();
+                outer.serialize_element(&pairs)?;
             }
-            outer.serialize_element(&pairs)?;
+            outer.end()
         }
-        outer.end()
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<HashMap<u64, Fr>>, D::Error> {
-        let outer = Vec::<Vec<(u64, Vec<u8>)>>::deserialize(d)?;
-        outer
-            .into_iter()
-            .map(|pairs| {
-                pairs
-                    .into_iter()
-                    .map(|(k, bytes)| {
-                        Fr::deserialize_uncompressed_unchecked(&bytes[..])
-                            .map(|fr| (k, fr))
-                            .map_err(serde::de::Error::custom)
-                    })
-                    .collect::<Result<HashMap<u64, Fr>, _>>()
-            })
-            .collect()
+        if d.is_human_readable() {
+            let string_maps = Vec::<HashMap<u64, String>>::deserialize(d)?;
+            super::parse_pols(string_maps).map_err(serde::de::Error::custom)
+        } else {
+            let outer = Vec::<Vec<(u64, [u8; 32])>>::deserialize(d)?;
+            outer
+                .into_iter()
+                .map(|pairs| {
+                    pairs
+                        .into_iter()
+                        .map(|(k, bytes)| {
+                            super::fr_from_bytes(bytes)
+                                .map(|fr| (k, fr))
+                                .map_err(serde::de::Error::custom)
+                        })
+                        .collect::<Result<HashMap<u64, Fr>, _>>()
+                })
+                .collect()
+        }
     }
 }
 
-/// Parse snarkjs JSON string format for G1Affine
-pub mod g1_json_serde {
-    use ark_bn254::G1Affine;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+// --- shared helpers ---
 
-    pub fn serialize<S: Serializer>(v: &G1Affine, s: S) -> Result<S::Ok, S::Error> {
-        super::g1_to_string(*v).serialize(s)
+fn fr_to_bytes(fr: Fr) -> [u8; 32] {
+    let limbs = fr.into_bigint().0;
+    let mut bytes = [0u8; 32];
+    for (i, limb) in limbs.iter().enumerate() {
+        bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
     }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G1Affine, D::Error> {
-        let arr = <[String; 3]>::deserialize(d)?;
-        super::parse_g1(arr).map_err(serde::de::Error::custom)
-    }
+    bytes
 }
 
-/// Parse snarkjs JSON string format for G2Affine
-pub mod g2_json_serde {
-    use ark_bn254::G2Affine;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer>(v: &G2Affine, s: S) -> Result<S::Ok, S::Error> {
-        super::g2_to_string(*v).serialize(s)
+fn fr_from_bytes(bytes: [u8; 32]) -> Result<Fr, anyhow::Error> {
+    let mut limbs = [0u64; 4];
+    for (i, limb) in limbs.iter_mut().enumerate() {
+        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().unwrap());
     }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G2Affine, D::Error> {
-        let arr = <[[String; 2]; 3]>::deserialize(d)?;
-        super::parse_f2(arr).map_err(serde::de::Error::custom)
-    }
+    Ok(Fr::from(ark_ff::BigInt(limbs)))
 }
 
-/// Parse snarkjs JSON string format for `Vec<G1Affine>`
-pub mod g1_vec_json_serde {
-    use ark_bn254::G1Affine;
-    use ark_ec::AffineRepr;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer>(v: &[G1Affine], s: S) -> Result<S::Ok, S::Error> {
-        let strs: Vec<[String; 3]> = v.iter().map(|p| super::g1_to_string(*p)).collect();
-        strs.serialize(s)
+fn g1_to_bytes(value: G1Affine) -> Vec<u8> {
+    let Some(xy) = value.xy() else {
+        return vec![0u8; 64];
+    };
+    let mut bytes = [0u8; 64];
+    for (i, limb) in xy.0.into_bigint().0.iter().enumerate() {
+        bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
     }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<G1Affine>, D::Error> {
-        let arrs = Vec::<Option<[String; 3]>>::deserialize(d)?;
-        arrs.into_iter()
-            .map(|opt| match opt {
-                Some(arr) => super::parse_g1(arr).map_err(serde::de::Error::custom),
-                None => Ok(G1Affine::zero()),
-            })
-            .collect()
+    for (i, limb) in xy.1.into_bigint().0.iter().enumerate() {
+        bytes[32 + i * 8..32 + (i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
     }
+    bytes.to_vec()
 }
 
-/// Parse snarkjs JSON string format for `Vec<G2Affine>`
-pub mod g2_vec_json_serde {
-    use ark_bn254::G2Affine;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer>(v: &[G2Affine], s: S) -> Result<S::Ok, S::Error> {
-        let strs: Vec<[[String; 2]; 3]> = v.iter().map(|p| super::g2_to_string(*p)).collect();
-        strs.serialize(s)
+fn g1_from_bytes(bytes: &[u8]) -> Result<G1Affine, anyhow::Error> {
+    if bytes.len() != 64 {
+        return Err(anyhow!(
+            "expected 64 bytes for G1Affine, got {}",
+            bytes.len()
+        ));
     }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<G2Affine>, D::Error> {
-        let arrs = Vec::<[[String; 2]; 3]>::deserialize(d)?;
-        arrs.into_iter()
-            .map(|arr| super::parse_f2(arr).map_err(serde::de::Error::custom))
-            .collect()
+    if bytes.iter().all(|&b| b == 0) {
+        return Ok(G1Affine::zero());
     }
+    let x = fq_from_bytes(&bytes[..32])?;
+    let y = fq_from_bytes(&bytes[32..])?;
+    Ok(G1Affine::new_unchecked(x, y))
 }
 
-/// Parse snarkjs JSON string format for `Vec<HashMap<u64, Fr>>`
-pub mod fr_map_vec_json_serde {
-    use std::collections::HashMap;
-
-    use ark_bn254::Fr;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer>(v: &[HashMap<u64, Fr>], s: S) -> Result<S::Ok, S::Error> {
-        let string_maps: Vec<HashMap<u64, String>> = v
-            .iter()
-            .map(|map| map.iter().map(|(&k, fr)| (k, fr.to_string())).collect())
-            .collect();
-        string_maps.serialize(s)
+fn g2_to_bytes(value: G2Affine) -> Vec<u8> {
+    let Some(xy) = value.xy() else {
+        return vec![0u8; 128];
+    };
+    let mut bytes = [0u8; 128];
+    for (i, limb) in xy.0.c0.into_bigint().0.iter().enumerate() {
+        bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
     }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<HashMap<u64, Fr>>, D::Error> {
-        let string_maps = Vec::<HashMap<u64, String>>::deserialize(d)?;
-        super::parse_pols(string_maps).map_err(serde::de::Error::custom)
+    for (i, limb) in xy.0.c1.into_bigint().0.iter().enumerate() {
+        bytes[32 + i * 8..32 + (i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
     }
+    for (i, limb) in xy.1.c0.into_bigint().0.iter().enumerate() {
+        bytes[64 + i * 8..64 + (i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
+    }
+    for (i, limb) in xy.1.c1.into_bigint().0.iter().enumerate() {
+        bytes[96 + i * 8..96 + (i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
+    }
+    bytes.to_vec()
 }
+
+fn g2_from_bytes(bytes: &[u8]) -> Result<G2Affine, anyhow::Error> {
+    if bytes.len() != 128 {
+        return Err(anyhow!(
+            "expected 128 bytes for G2Affine, got {}",
+            bytes.len()
+        ));
+    }
+    if bytes.iter().all(|&b| b == 0) {
+        return Ok(G2Affine::zero());
+    }
+    let x = Fq2::new(fq_from_bytes(&bytes[..32])?, fq_from_bytes(&bytes[32..64])?);
+    let y = Fq2::new(fq_from_bytes(&bytes[64..96])?, fq_from_bytes(&bytes[96..])?);
+    Ok(G2Affine::new_unchecked(x, y))
+}
+
+fn fq_from_bytes(bytes: &[u8]) -> Result<Fq, anyhow::Error> {
+    let mut limbs = [0u64; 4];
+    for (i, limb) in limbs.iter_mut().enumerate() {
+        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().unwrap());
+    }
+    Ok(Fq::from(ark_ff::BigInt(limbs)))
+}
+
+// --- string helpers ---
 
 fn g1_to_string(value: G1Affine) -> [String; 3] {
     let Some(xy) = value.xy() else {

@@ -12,7 +12,7 @@ mod bench {
         let input_str = std::fs::read_to_string("src/testdata/withdraw_input_signals.json")
             .expect("read inputs");
 
-        let circuit = Circuit::from_json(&circuit_str).expect("parse circuit");
+        let circuit: Circuit = serde_json::from_str(&circuit_str).expect("parse circuit");
         let input_signals: HashMap<String, Value> =
             serde_json::from_str(&input_str).expect("parse inputs");
 

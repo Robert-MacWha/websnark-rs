@@ -277,7 +277,11 @@ impl RTCtx {
 
     pub fn assert_eq(&self, a: &Fr, b: &Fr, err: &str) -> Result<(), CircuitError> {
         if a != b {
-            return Err(CircuitError::AssertionFailed(Box::new(*a), Box::new(*b), err.to_string()));
+            return Err(CircuitError::AssertionFailed(
+                Box::new(*a),
+                Box::new(*b),
+                err.to_string(),
+            ));
         }
         Ok(())
     }
@@ -336,7 +340,7 @@ mod tests {
 
     fn fixture() -> RTCtx {
         let data = include_str!("../testdata/withdraw.json");
-        let circuit = Circuit::from_json(data).unwrap();
+        let circuit: Circuit = serde_json::from_str(data).unwrap();
         RTCtx::new(circuit).unwrap()
     }
 

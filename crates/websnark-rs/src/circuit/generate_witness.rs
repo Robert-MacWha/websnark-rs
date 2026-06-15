@@ -95,14 +95,14 @@ mod tests {
     #[tracing_test::traced_test]
     fn test_generate_witness() {
         let circuit_data = include_str!("../testdata/withdraw.json");
-        let circuit = Circuit::from_json(circuit_data).unwrap();
+        let circuit: Circuit = serde_json::from_str(circuit_data).unwrap();
 
         let input_signal_data = include_str!("../testdata/withdraw_input_signals.json");
         let input_signals: HashMap<String, Value> =
             serde_json::from_str(input_signal_data).unwrap();
 
         let expected_witness_data = include_str!("../testdata/witness.json");
-        let expected_witness = Witness::from_json(expected_witness_data).unwrap();
+        let expected_witness: Witness = serde_json::from_str(expected_witness_data).unwrap();
 
         let witness = generate_witness(circuit, input_signals).unwrap();
         assert_eq!(witness, expected_witness);

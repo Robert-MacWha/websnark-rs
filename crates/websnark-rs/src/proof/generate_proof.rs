@@ -144,10 +144,10 @@ mod tests {
     #[tracing_test::traced_test]
     fn test_calculate_h() {
         let pk_data = include_str!("../testdata/withdraw_proving_key.json");
-        let pk = ProvingKey::from_json(pk_data).unwrap();
+        let pk: ProvingKey = serde_json::from_str(pk_data).unwrap();
 
         let witness_data = include_str!("../testdata/witness.json");
-        let witness = Witness::from_json(witness_data).unwrap();
+        let witness: Witness = serde_json::from_str(witness_data).unwrap();
 
         let h_data = include_str!("../testdata/h.json");
         let expected_h: Vec<String> = serde_json::from_str(h_data).unwrap();
@@ -167,13 +167,13 @@ mod tests {
     #[tracing_test::traced_test]
     fn test_prove() {
         let pk_data = include_str!("../testdata/withdraw_proving_key.json");
-        let pk = ProvingKey::from_json(pk_data).unwrap();
+        let pk: ProvingKey = serde_json::from_str(pk_data).unwrap();
 
         let witness_data = include_str!("../testdata/witness.json");
-        let witness = Witness::from_json(witness_data).unwrap();
+        let witness: Witness = serde_json::from_str(witness_data).unwrap();
 
         let proof_data = include_str!("../testdata/proof.json");
-        let expected_proof = Proof::from_json(proof_data).unwrap();
+        let expected_proof: Proof = serde_json::from_str(proof_data).unwrap();
 
         let r = Fr::ZERO;
         let s = Fr::ZERO;

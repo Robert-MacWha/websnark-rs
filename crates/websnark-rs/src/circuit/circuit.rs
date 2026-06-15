@@ -49,11 +49,6 @@ pub struct Function {
 }
 
 impl Circuit {
-    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
-        let c: Circuit = serde_json::from_str(s)?;
-        Ok(c)
-    }
-
     /// Returns the index of the i-th input
     pub fn input_idx(&self, i: u64) -> Result<u64> {
         if i >= self.n_inputs {

@@ -13,8 +13,8 @@ mod bench {
         let witness_str =
             std::fs::read_to_string("src/testdata/witness.json").expect("read witness");
 
-        let pk = ProvingKey::from_json(&pk_str).expect("parse proving key");
-        let witness = Witness::from_json(&witness_str).expect("parse witness");
+        let pk: ProvingKey = serde_json::from_str(&pk_str).expect("parse proving key");
+        let witness: Witness = serde_json::from_str(&witness_str).expect("parse witness");
 
         let r = Fr::ZERO;
         let s = Fr::ZERO;

@@ -1,4 +1,8 @@
 #![cfg(target_arch = "wasm32")]
+
+#[cfg(feature = "parallel")]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 use std::{collections::HashMap, hint::black_box};
 
 use wasm_bindgen_test::{Criterion, Instant};

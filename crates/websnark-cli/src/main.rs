@@ -33,8 +33,8 @@ fn main() {
     match cli.command {
         Commands::ConvertProvingKey { input, output } => {
             let proving_key_json = fs::read_to_string(&input).expect("Failed to read proving key");
-            let proving_key =
-                ProvingKey::from_json(&proving_key_json).expect("Failed to parse proving key");
+            let proving_key: ProvingKey =
+                serde_json::from_str(&proving_key_json).expect("Failed to parse proving key");
             let proving_key_bytes =
                 postcard::to_stdvec(&proving_key).expect("Failed to serialize proving key");
             fs::write(&output, &proving_key_bytes).expect("Failed to write proving key");
@@ -42,8 +42,8 @@ fn main() {
         Commands::ConvertVerifyingKey { input, output } => {
             let verifying_key_json =
                 fs::read_to_string(&input).expect("Failed to read verifying key");
-            let verifying_key = VerifyingKey::from_json(&verifying_key_json)
-                .expect("Failed to parse verifying key");
+            let verifying_key: VerifyingKey =
+                serde_json::from_str(&verifying_key_json).expect("Failed to parse verifying key");
             let verifying_key_bytes =
                 postcard::to_stdvec(&verifying_key).expect("Failed to serialize verifying key");
             fs::write(&output, &verifying_key_bytes).expect("Failed to write verifying key");

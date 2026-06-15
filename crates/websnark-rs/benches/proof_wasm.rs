@@ -1,4 +1,8 @@
 #![cfg(target_arch = "wasm32")]
+
+#[cfg(feature = "parallel")]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 use std::hint::black_box;
 
 use ark_bn254::Fr;
@@ -30,8 +34,8 @@ const _: () = {
 };
 
 fn bench_generate_proof(c: &mut Criterion) {
-    let pk = ProvingKey::from_json(PK_JSON).expect("parse proving key");
-    let witness = Witness::from_json(WITNESS_JSON).expect("parse witness");
+    let pk: ProvingKey = serde_json::from_str(PK_JSON).expect("parse proving key");
+    let witness: Witness = serde_json::from_str(WITNESS_JSON).expect("parse witness");
 
     let r = Fr::ZERO;
     let s = Fr::ZERO;

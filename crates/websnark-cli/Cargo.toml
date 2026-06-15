@@ -9,4 +9,5 @@ publish = false
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 websnark-rs = { workspace = true }
+serde_json = { workspace = true }
 postcard = { workspace = true, features = ["use-std"] }
