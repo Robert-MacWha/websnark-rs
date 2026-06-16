@@ -62,7 +62,7 @@
               rustfmtNightly
 
               pkgs.nodejs
-              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.wasm-bindgen-cli_0_2_108
               pkgs.wasm-pack
               pkgs.wabt
               pkgs.binaryen
@@ -81,7 +81,7 @@
               rustfmtNightly
 
               pkgs.wasm-pack
-              pkgs.wasm-bindgen-cli_0_2_118
+              pkgs.wasm-bindgen-cli_0_2_108
               pkgs.nodejs
             ];
           };

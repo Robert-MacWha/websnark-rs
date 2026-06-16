@@ -4,12 +4,11 @@ resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0.102"
-ark-bn254 = "0.5.0"
-ark-ec = "0.5.0"
-ark-ff = "0.5.0"
-ark-poly = "0.5.0"
-ark-serialize = "0.5.0"
-ark-std = "0.5.0"
+ark-bn254 = "0.6.0"
+ark-ec = "0.6.0"
+ark-ff = "0.6.0"
+ark-poly = "0.6.0"
+ark-std = "0.6.0"
 lalrpop-util = "0.23.1"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
@@ -27,9 +26,14 @@ wasm-bindgen-test = "0.3"
 lalrpop = "0.23.1"
 websnark-rs = { path = "crates/websnark-rs" }
 clap = "4.6.1"
-rand = "0.9"
+rand = "0.10"
 thiserror = "2"
-getrandom = "0.3"
+getrandom = "0.4"
 
 [profile.test]
 opt-level = 1
+
+[patch.crates-io]
+ark-ec = { git = "https://github.com/Robert-MacWha/algebra" }        # Fix https://github.com/arkworks-rs/algebra/issues/1110
+ark-ff = { git = "https://github.com/Robert-MacWha/algebra" }
+ark-serialize = { git = "https://github.com/Robert-MacWha/algebra" }
