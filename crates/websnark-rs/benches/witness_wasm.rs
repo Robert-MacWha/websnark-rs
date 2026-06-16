@@ -1,5 +1,8 @@
 #![cfg(target_arch = "wasm32")]
 
+// NOTE: run_in_browser is not an accurate benchmark for in-browser performance. For whatever reason this
+// reports much higher times than running the same code in-browser with wasm-pack. Use this as a rough
+// benchmark for changes, but do not rely on it.
 #[cfg(feature = "parallel")]
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
