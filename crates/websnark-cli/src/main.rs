@@ -38,6 +38,14 @@ fn main() {
             let proving_key_bytes =
                 postcard::to_stdvec(&proving_key).expect("Failed to serialize proving key");
             fs::write(&output, &proving_key_bytes).expect("Failed to write proving key");
+
+            println!("Converted proving key, testing deserialization...");
+            let proving_key_bytes = fs::read(&output).expect("Failed to read proving key");
+            let proving_key_deserialized: ProvingKey = postcard::from_bytes(&proving_key_bytes)
+                .expect("Failed to deserialize proving key");
+
+            assert_eq!(proving_key, proving_key_deserialized);
+            println!("Deserialization successful!");
         }
         Commands::ConvertVerifyingKey { input, output } => {
             let verifying_key_json =

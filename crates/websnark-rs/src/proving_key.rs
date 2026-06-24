@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::serde::{fr_map_vec_serde, g1_serde, g1_vec_serde, g2_serde, g2_vec_serde};
 
 /// CircomV1-compatible proving key
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProvingKey {
     #[serde(rename = "A", with = "g1_vec_serde")]
     pub a: Vec<G1Affine>,
