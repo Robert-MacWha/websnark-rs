@@ -34,6 +34,6 @@ getrandom = "0.4"
 opt-level = 1
 
 [patch.crates-io]
-ark-ec = { git = "https://github.com/Robert-MacWha/algebra" }        # Fix https://github.com/arkworks-rs/algebra/issues/1110
+ark-ec = { git = "https://github.com/Robert-MacWha/algebra" }        # Fix https://github.com/arkworks-rs/algebra/issues/1111
 ark-ff = { git = "https://github.com/Robert-MacWha/algebra" }
 ark-serialize = { git = "https://github.com/Robert-MacWha/algebra" }
