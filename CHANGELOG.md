@@ -1,3 +1,25 @@
+## [0.4.0] - 2026-06-24
+
+### 🚀 Features
+
+- Update serialization interface
+- Remove anyhow dep
+- Remove serde_json from websnark-rs and add serde feature flag
+
+### 🐛 Bug Fixes
+
+- Remove unwrap from serde
+
+### 📚 Documentation
+
+- Fix doc test
+
+### ⚙️ Miscellaneous Tasks
+
+- Update deps
+- Benchmark warning
+- Add check for proving key conversion
+- Fix issue ref
 ## [0.3.1] - 2026-06-03
 
 ### 🐛 Bug Fixes
@@ -9,6 +31,7 @@
 - Linter
 - Clippy
 - Add getrandom feature flag
+- Release v0.3.1
 ## [0.3.0] - 2026-06-03
 
 ### 🚀 Features
