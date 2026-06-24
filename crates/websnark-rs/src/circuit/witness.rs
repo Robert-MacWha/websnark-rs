@@ -51,22 +51,25 @@ impl<'de> Deserialize<'de> for Witness {
             Ok(Witness(frs))
         } else {
             let vecs = Vec::<Vec<u8>>::deserialize(d)?;
-            let frs = vecs
-                .into_iter()
-                .map(|bytes| {
-                    if bytes.len() != 32 {
-                        return Err(D::Error::custom(format!(
-                            "expected 32 bytes, got {}",
-                            bytes.len()
-                        )));
-                    }
-                    let mut limbs = [0u64; 4];
-                    for (i, limb) in limbs.iter_mut().enumerate() {
-                        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().unwrap());
-                    }
-                    Ok(Fr::from(ark_ff::BigInt(limbs)))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
+            let frs =
+                vecs.into_iter()
+                    .map(|bytes| {
+                        if bytes.len() != 32 {
+                            return Err(D::Error::custom(format!(
+                                "expected 32 bytes, got {}",
+                                bytes.len()
+                            )));
+                        }
+                        let mut limbs = [0u64; 4];
+                        for (i, limb) in limbs.iter_mut().enumerate() {
+                            *limb =
+                                u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().map_err(
+                                    |_| D::Error::custom("Failed to convert bytes to u64"),
+                                )?);
+                        }
+                        Ok(Fr::from(ark_ff::BigInt(limbs)))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
             Ok(Witness(frs))
         }
     }

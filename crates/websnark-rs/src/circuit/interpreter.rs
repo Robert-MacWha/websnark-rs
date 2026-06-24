@@ -179,7 +179,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
             // }
 
             base.inverse()
-                .ok_or(anyhow::anyhow!("No modular inverse exists").into())
+                .ok_or(CircuitError::InvalidInverse)
                 .map(|inv| inv.into())
         }
         Expr::ModPow(base, exp, _modulos) => {

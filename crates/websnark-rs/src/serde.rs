@@ -1,9 +1,19 @@
-use anyhow::{Context, anyhow};
 use ark_bn254::{Fq, Fq2, Fr, G1Affine, G2Affine};
 use ark_ec::AffineRepr;
 use ark_ff::PrimeField;
+use std::array::TryFromSliceError;
 use std::collections::HashMap;
 use std::str::FromStr;
+
+#[derive(Debug, thiserror::Error)]
+enum FqParseError {
+    #[error("invalid length")]
+    InvalidLength,
+    #[error("invalid field")]
+    InvalidField(),
+    #[error("slice error")]
+    SliceError(#[from] TryFromSliceError),
+}
 
 pub mod g1_serde {
     use ark_bn254::G1Affine;
@@ -178,14 +188,10 @@ fn fr_to_bytes(fr: Fr) -> [u8; 32] {
     bytes
 }
 
-fn fr_from_bytes(bytes: [u8; 32]) -> Result<Fr, anyhow::Error> {
+fn fr_from_bytes(bytes: [u8; 32]) -> Result<Fr, TryFromSliceError> {
     let mut limbs = [0u64; 4];
     for (i, limb) in limbs.iter_mut().enumerate() {
-        *limb = u64::from_le_bytes(
-            bytes[i * 8..(i + 1) * 8]
-                .try_into()
-                .context("Failed to convert bytes to u64")?,
-        )
+        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into()?)
     }
     Ok(Fr::from(ark_ff::BigInt(limbs)))
 }
@@ -204,12 +210,9 @@ fn g1_to_bytes(value: G1Affine) -> Vec<u8> {
     bytes.to_vec()
 }
 
-fn g1_from_bytes(bytes: &[u8]) -> Result<G1Affine, anyhow::Error> {
+fn g1_from_bytes(bytes: &[u8]) -> Result<G1Affine, FqParseError> {
     if bytes.len() != 64 {
-        return Err(anyhow!(
-            "expected 64 bytes for G1Affine, got {}",
-            bytes.len()
-        ));
+        return Err(FqParseError::InvalidLength);
     }
     if bytes.iter().all(|&b| b == 0) {
         return Ok(G1Affine::zero());
@@ -239,12 +242,9 @@ fn g2_to_bytes(value: G2Affine) -> Vec<u8> {
     bytes.to_vec()
 }
 
-fn g2_from_bytes(bytes: &[u8]) -> Result<G2Affine, anyhow::Error> {
+fn g2_from_bytes(bytes: &[u8]) -> Result<G2Affine, FqParseError> {
     if bytes.len() != 128 {
-        return Err(anyhow!(
-            "expected 128 bytes for G2Affine, got {}",
-            bytes.len()
-        ));
+        return Err(FqParseError::InvalidLength);
     }
     if bytes.iter().all(|&b| b == 0) {
         return Ok(G2Affine::zero());
@@ -254,14 +254,10 @@ fn g2_from_bytes(bytes: &[u8]) -> Result<G2Affine, anyhow::Error> {
     Ok(G2Affine::new_unchecked(x, y))
 }
 
-fn fq_from_bytes(bytes: &[u8]) -> Result<Fq, anyhow::Error> {
+fn fq_from_bytes(bytes: &[u8]) -> Result<Fq, TryFromSliceError> {
     let mut limbs = [0u64; 4];
     for (i, limb) in limbs.iter_mut().enumerate() {
-        *limb = u64::from_le_bytes(
-            bytes[i * 8..(i + 1) * 8]
-                .try_into()
-                .context("Failed to convert bytes to u64")?,
-        );
+        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into()?);
     }
     Ok(Fq::from(ark_ff::BigInt(limbs)))
 }
@@ -296,37 +292,37 @@ fn g2_to_string(value: G2Affine) -> [[String; 2]; 3] {
     [[x0, x1], [y0, y1], ["1".to_string(), "0".to_string()]]
 }
 
-fn parse_g1(value: [String; 3]) -> Result<G1Affine, anyhow::Error> {
+fn parse_g1(value: [String; 3]) -> Result<G1Affine, FqParseError> {
     let is_zero = value[2] == "0";
     if is_zero {
         return Ok(G1Affine::zero());
     }
 
-    let x = Fq::from_str(&value[0]).map_err(|_| anyhow!("Failed to parse x coord"))?;
-    let y = Fq::from_str(&value[1]).map_err(|_| anyhow!("Failed to parse y coord"))?;
+    let x = Fq::from_str(&value[0]).map_err(|_| FqParseError::InvalidField())?;
+    let y = Fq::from_str(&value[1]).map_err(|_| FqParseError::InvalidField())?;
 
     Ok(G1Affine::new_unchecked(x, y))
 }
 
-fn parse_f2(value: [[String; 2]; 3]) -> Result<G2Affine, anyhow::Error> {
+fn parse_f2(value: [[String; 2]; 3]) -> Result<G2Affine, FqParseError> {
     let is_zero = value[2][0] == "0" && value[2][1] == "0";
     if is_zero {
         return Ok(G2Affine::zero());
     }
 
     let x = Fq2::new(
-        Fq::from_str(&value[0][0]).map_err(|_| anyhow!("Failed to parse x0 coord"))?,
-        Fq::from_str(&value[0][1]).map_err(|_| anyhow!("Failed to parse x1 coord"))?,
+        Fq::from_str(&value[0][0]).map_err(|_| FqParseError::InvalidField())?,
+        Fq::from_str(&value[0][1]).map_err(|_| FqParseError::InvalidField())?,
     );
     let y = Fq2::new(
-        Fq::from_str(&value[1][0]).map_err(|_| anyhow!("Failed to parse y0 coord"))?,
-        Fq::from_str(&value[1][1]).map_err(|_| anyhow!("Failed to parse y1 coord"))?,
+        Fq::from_str(&value[1][0]).map_err(|_| FqParseError::InvalidField())?,
+        Fq::from_str(&value[1][1]).map_err(|_| FqParseError::InvalidField())?,
     );
 
     Ok(G2Affine::new_unchecked(x, y))
 }
 
-fn parse_pols(value: Vec<HashMap<u64, String>>) -> Result<Vec<HashMap<u64, Fr>>, anyhow::Error> {
+fn parse_pols(value: Vec<HashMap<u64, String>>) -> Result<Vec<HashMap<u64, Fr>>, FqParseError> {
     value
         .iter()
         .map(|map| {
@@ -334,7 +330,7 @@ fn parse_pols(value: Vec<HashMap<u64, String>>) -> Result<Vec<HashMap<u64, Fr>>,
                 .map(|(&k, v)| {
                     Ok((
                         k,
-                        Fr::from_str(v).map_err(|_| anyhow!("Failed to parse Fr"))?,
+                        Fr::from_str(v).map_err(|_| FqParseError::InvalidField())?,
                     ))
                 })
                 .collect()

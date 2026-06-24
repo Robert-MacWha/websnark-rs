@@ -1,4 +1,3 @@
-use anyhow::Context;
 use ark_bn254::{Fr, G1Projective, G2Projective};
 use ark_ec::{CurveGroup, VariableBaseMSM};
 use ark_ff::{AdditiveGroup, PrimeField};
@@ -90,22 +89,19 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
     for (i, w_i) in w.iter().enumerate().take(pk.n_vars as usize) {
         let w_i = to_s(*w_i).ok_or(ProofError::InvalidWitness(*w_i))?;
         for (&j, coeff) in &pk.pols_a[i] {
-            pol_at[j as usize] +=
-                w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient(*coeff))?;
+            pol_at[j as usize] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
         }
         for (&j, coeff) in &pk.pols_b[i] {
-            pol_bt[j as usize] +=
-                w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient(*coeff))?;
+            pol_bt[j as usize] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
         }
     }
 
-    let domain_m =
-        Radix2EvaluationDomain::<FrSnarkjs>::new(m).context("failed to create m domain")?;
+    let domain_m = Radix2EvaluationDomain::<FrSnarkjs>::new(m).ok_or(ProofError::InvalidDomain)?;
     let domain_2m =
-        Radix2EvaluationDomain::<FrSnarkjs>::new(2 * m).context("failed to create 2m domain")?;
+        Radix2EvaluationDomain::<FrSnarkjs>::new(2 * m).ok_or(ProofError::InvalidDomain)?;
     let coset_m = domain_m
         .get_coset(domain_2m.group_gen())
-        .context("failed to create coset")?;
+        .ok_or(ProofError::InvalidCoset)?;
 
     let subgroup_a = pol_at.clone();
     let subgroup_b = pol_bt.clone();
@@ -125,11 +121,11 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
 
     domain_2m.ifft_in_place(&mut pol_ab);
 
-    Ok(pol_ab
+    pol_ab
         .split_off(m)
         .into_iter()
-        .map(|x| Fr::from_bigint(x.into_bigint()).context("invalid ab value"))
-        .collect::<Result<_, anyhow::Error>>()?)
+        .map(|x| Fr::from_bigint(x.into_bigint()).ok_or(ProofError::InvalidCoefficient))
+        .collect::<Result<_, ProofError>>()
 }
 
 #[cfg(test)]

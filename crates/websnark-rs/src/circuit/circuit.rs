@@ -1,8 +1,7 @@
-use anyhow::{Result, bail};
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 
-use crate::circuit::value::Value;
+use crate::circuit::{CircuitError, value::Value};
 
 /// CircomV1-compatible circuit definition
 #[derive(Debug, Clone, Deserialize)]
@@ -50,14 +49,14 @@ pub struct Function {
 
 impl Circuit {
     /// Returns the index of the i-th input
-    pub fn input_idx(&self, i: u64) -> Result<u64> {
+    pub fn input_idx(&self, i: u64) -> Result<u64, CircuitError> {
         if i >= self.n_inputs {
-            bail!("input index out of bounds: {i} >= {}", self.n_inputs);
+            return Err(CircuitError::InputIndexOutOfBounds(i, self.n_inputs));
         }
         Ok(self.n_outputs + 1 + i)
     }
 
-    pub fn signal_names(&self, i: u64) -> Result<String> {
+    pub fn signal_names(&self, i: u64) -> Result<String, CircuitError> {
         let idx = self.input_idx(i)?;
         Ok(self.signals[idx as usize].names.join(","))
     }

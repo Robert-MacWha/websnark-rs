@@ -30,27 +30,21 @@ pub fn generate_witness(
     for i in 0..ctx.circuit.n_inputs {
         let idx = ctx.circuit.input_idx(i)?;
         if ctx.witness[idx as usize].is_none() {
-            return Err(anyhow::anyhow!(
-                "input signal not assigned: {}",
-                ctx.circuit.signal_names(i)?
-            )
-            .into());
+            let signal_name = ctx.circuit.signal_names(i)?;
+            return Err(CircuitError::SignalNotAssigned(signal_name));
         }
     }
 
     for i in 0..ctx.witness.len() {
         if ctx.witness[i].is_none() {
-            return Err(anyhow::anyhow!(
-                "signal not assigned: {}",
-                ctx.circuit.signal_names(i as u64)?
-            )
-            .into());
+            let signal_name = ctx.circuit.signal_names(i as u64)?;
+            return Err(CircuitError::SignalNotAssigned(signal_name));
         }
     }
 
     let output = ctx.witness[..ctx.circuit.n_vars as usize]
         .iter()
-        .map(|v| (*v).ok_or(anyhow::anyhow!("signal not assigned").into()))
+        .map(|v| v.ok_or(CircuitError::SignalNotAssigned("unreachable".to_string())))
         .collect::<Result<Vec<Fr>, CircuitError>>()?;
     Ok(Witness::new(output))
 }

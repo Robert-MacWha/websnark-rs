@@ -2076,7 +2076,6 @@ dependencies = [
 name = "websnark-rs"
 version = "0.3.1"
 dependencies = [
- "anyhow",
  "ark-bn254",
  "ark-ec",
  "ark-ff",

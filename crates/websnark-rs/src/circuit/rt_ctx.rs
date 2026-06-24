@@ -3,7 +3,7 @@ use std::{fmt::Write, rc::Rc};
 use ark_bn254::Fr;
 use num_bigint::BigInt;
 use rustc_hash::FxHashMap;
-use tracing::{debug, trace};
+use tracing::debug;
 
 use crate::{
     circom::{ast::Function, parse_function},
@@ -136,7 +136,7 @@ impl RTCtx {
         let scope = self
             .scopes
             .last_mut()
-            .ok_or_else(|| anyhow::anyhow!("No active scope"))?;
+            .ok_or(CircuitError::RuntimeError("No active scope".to_string()))?;
 
         if sels.is_empty() {
             scope.insert(name.to_string(), value.clone());
@@ -147,7 +147,10 @@ impl RTCtx {
             .entry(name.to_string())
             .or_insert_with(|| Value::Array(Vec::new()));
         let Value::Array(arr) = entry else {
-            return Err(anyhow::anyhow!("Variable is not an array: {}", name).into());
+            return Err(CircuitError::RuntimeError(format!(
+                "Variable is not an array: {}",
+                name
+            )));
         };
         set_var_array(arr, &sels, value.clone());
         Ok(value)
@@ -160,11 +163,16 @@ impl RTCtx {
                 return select(v, &sels).cloned();
             }
         }
-        Err(anyhow::anyhow!("Variable not defined: {}", name).into())
+        Err(CircuitError::RuntimeError(format!(
+            "Variable not defined: {}",
+            name
+        )))
     }
 
     pub fn call_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value, CircuitError> {
-        Err(anyhow::anyhow!("call_function is not supported yet").into())
+        Err(CircuitError::RuntimeError(
+            "call_function is not supported yet".to_string(),
+        ))
     }
 
     pub fn trigger_component(&mut self, c: usize) -> Result<(), CircuitError> {
@@ -185,11 +193,10 @@ impl RTCtx {
             .templates
             .get(&component.template)
             .ok_or_else(|| {
-                anyhow::anyhow!(
+                CircuitError::RuntimeError(format!(
                     "Template not defined: {} for component {}",
-                    component.template,
-                    component.name
-                )
+                    component.template, component.name
+                ))
             })?
             .clone();
         execute_function(self, &func)?;
@@ -236,22 +243,18 @@ impl RTCtx {
         if let Some(&idx) = self.circuit.signal_name2_idx.get(full) {
             return Ok(idx as usize);
         }
-        Ok(full
-            .parse::<usize>()
-            .map_err(|e| anyhow::anyhow!("Invalid signal index: {}", e))?)
+        full.parse::<usize>()
+            .map_err(|e| CircuitError::RuntimeError(format!("Invalid signal index: {}", e)))
     }
 
     fn get_signal_full(&self, full: &str) -> Result<Fr, CircuitError> {
-        trace!("get {full}");
+        // tracing::trace!("get {full}");
         let s_id = self.signal_idx(full)?;
-        Ok(
-            self.witness[s_id]
-                .ok_or_else(|| anyhow::anyhow!("Signal not initialized: {}", full))?,
-        )
+        self.witness[s_id].ok_or_else(|| CircuitError::SignalNotAssigned(full.to_string()))
     }
 
     fn set_signal_full(&mut self, full: &str, value: Fr) -> Result<(), CircuitError> {
-        trace!("set {full} = {value}");
+        // tracing::trace!("set {full} = {value}");
         let s_id = self.signal_idx(full)?;
         let first_init = self.witness[s_id].is_none();
         self.witness[s_id] = Some(value);
@@ -322,14 +325,15 @@ fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value, CircuitError> {
     let idx = sels[0] as usize;
     let next = arr
         .get(idx)
-        .ok_or_else(|| CircuitError::ValueError(ValueError::ValueOutOfRange))?;
+        .ok_or(CircuitError::ValueError(ValueError::ValueOutOfRange))?;
     select(next, &sels[1..])
 }
 
 fn append_sels(out: &mut String, sels: Vec<u32>) -> Result<(), CircuitError> {
     for s in sels {
-        write!(out, "[{}]", s)
-            .map_err(|e| anyhow::anyhow!("Failed to build signal name: {}", e))?;
+        write!(out, "[{}]", s).map_err(|e| {
+            CircuitError::RuntimeError(format!("Failed to build signal name: {}", e))
+        })?;
     }
     Ok(())
 }

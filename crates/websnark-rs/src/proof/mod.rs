@@ -13,8 +13,10 @@ pub use proof::Proof;
 pub enum ProofError {
     #[error("Invalid witness: {0}")]
     InvalidWitness(ark_bn254::Fr),
-    #[error("Invalid coefficient: {0}")]
-    InvalidCoefficient(ark_bn254::Fr),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    #[error("Invalid coefficient")]
+    InvalidCoefficient,
+    #[error("Invalid domain")]
+    InvalidDomain,
+    #[error("Invalid coset")]
+    InvalidCoset,
 }
