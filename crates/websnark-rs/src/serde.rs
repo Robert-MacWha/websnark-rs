@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{Context, anyhow};
 use ark_bn254::{Fq, Fq2, Fr, G1Affine, G2Affine};
 use ark_ec::AffineRepr;
 use ark_ff::PrimeField;
@@ -181,7 +181,11 @@ fn fr_to_bytes(fr: Fr) -> [u8; 32] {
 fn fr_from_bytes(bytes: [u8; 32]) -> Result<Fr, anyhow::Error> {
     let mut limbs = [0u64; 4];
     for (i, limb) in limbs.iter_mut().enumerate() {
-        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().unwrap());
+        *limb = u64::from_le_bytes(
+            bytes[i * 8..(i + 1) * 8]
+                .try_into()
+                .context("Failed to convert bytes to u64")?,
+        )
     }
     Ok(Fr::from(ark_ff::BigInt(limbs)))
 }
@@ -253,7 +257,11 @@ fn g2_from_bytes(bytes: &[u8]) -> Result<G2Affine, anyhow::Error> {
 fn fq_from_bytes(bytes: &[u8]) -> Result<Fq, anyhow::Error> {
     let mut limbs = [0u64; 4];
     for (i, limb) in limbs.iter_mut().enumerate() {
-        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into().unwrap());
+        *limb = u64::from_le_bytes(
+            bytes[i * 8..(i + 1) * 8]
+                .try_into()
+                .context("Failed to convert bytes to u64")?,
+        );
     }
     Ok(Fq::from(ark_ff::BigInt(limbs)))
 }
