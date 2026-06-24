@@ -1,11 +1,11 @@
 use rustc_hash::FxHashMap;
-use serde::Deserialize;
 
 use crate::circuit::{CircuitError, value::Value};
 
 /// CircomV1-compatible circuit definition
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Circuit {
     pub n_pub_inputs: u64,
     pub n_prv_inputs: u64,
@@ -25,23 +25,26 @@ pub struct Circuit {
     pub functions: FxHashMap<String, Function>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Signal {
     pub names: Vec<String>,
-    #[serde(rename = "triggerComponents")]
+    #[cfg_attr(feature = "serde", serde(rename = "triggerComponents"))]
     pub trigger_components: Vec<u64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Component {
     pub name: String,
     pub template: String,
     pub params: FxHashMap<String, Value>,
-    #[serde(rename = "inputSignals")]
+    #[cfg_attr(feature = "serde", serde(rename = "inputSignals"))]
     pub input_signals: u64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Function {
     pub params: Vec<String>,
     pub func: String,

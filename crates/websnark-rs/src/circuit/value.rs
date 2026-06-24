@@ -4,8 +4,8 @@ use ark_bn254::Fr;
 use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
 use num_bigint::BigInt;
 use num_traits::ToPrimitive;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
-use serde_json::Value as JsonValue;
 
 /// Circuit value, representing either a number or an array of values.
 ///
@@ -115,6 +115,7 @@ impl Display for Value {
 
 /// Serialize in the snarkjs decimal-string JSON format so that
 /// `serde_json::to_string(&value)` produces human-readable output.
+#[cfg(feature = "serde")]
 impl Serialize for Value {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
@@ -132,32 +133,52 @@ impl Serialize for Value {
 }
 
 /// Deserialize from the snarkjs JSON format (number, decimal string, or array).
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let raw = JsonValue::deserialize(d)?;
-        Self::from_json(&raw).map_err(serde::de::Error::custom)
+        d.deserialize_any(ValueVisitor)
     }
 }
 
-impl Value {
-    fn from_json(v: &JsonValue) -> Result<Self, String> {
-        match v {
-            JsonValue::Number(n) => {
-                let s = n.to_string();
-                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
-                Ok(Value::Number(big))
-            }
-            JsonValue::String(s) => {
-                // Fallback for large numbers serialized as strings
-                let big = s.parse::<BigInt>().map_err(|e| e.to_string())?;
-                Ok(Value::Number(big))
-            }
-            JsonValue::Array(arr) => {
-                let items = arr.iter().map(Self::from_json).collect::<Result<_, _>>()?;
-                Ok(Value::Array(items))
-            }
-            other => Err(format!("expected number or array, got {other}")),
+#[cfg(feature = "serde")]
+struct ValueVisitor;
+
+#[cfg(feature = "serde")]
+impl<'de> serde::de::Visitor<'de> for ValueVisitor {
+    type Value = Value;
+
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("number, decimal string, or array")
+    }
+
+    fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+        Ok(Value::Number(BigInt::from(v)))
+    }
+
+    fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+        Ok(Value::Number(BigInt::from(v)))
+    }
+
+    fn visit_u128<E: serde::de::Error>(self, v: u128) -> Result<Self::Value, E> {
+        Ok(Value::Number(BigInt::from(v)))
+    }
+
+    fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+        v.parse::<BigInt>()
+            .map(Value::Number)
+            .map_err(|e| E::custom(e))
+    }
+
+    fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+        self.visit_str(&v)
+    }
+
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+        let mut items = Vec::new();
+        while let Some(item) = seq.next_element::<Value>()? {
+            items.push(item);
         }
+        Ok(Value::Array(items))
     }
 }
 

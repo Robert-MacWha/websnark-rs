@@ -1,8 +1,11 @@
 use std::ops::Deref;
+#[cfg(feature = "serde")]
 use std::str::FromStr;
 
 use ark_bn254::Fr;
+#[cfg(feature = "serde")]
 use ark_ff::PrimeField;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize, de::Error, ser::SerializeSeq};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,6 +17,7 @@ impl Witness {
     }
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for Witness {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         if s.is_human_readable() {
@@ -37,6 +41,7 @@ impl Serialize for Witness {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Witness {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         if d.is_human_readable() {

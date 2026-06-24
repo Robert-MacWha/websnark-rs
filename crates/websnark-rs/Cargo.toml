@@ -18,7 +18,8 @@ features = []
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = []
+default = ["serde"]
+serde = ["dep:serde"]
 asm = ["ark-ff/asm"]
 parallel = [
     "wasm-bindgen-rayon",
@@ -38,8 +39,7 @@ num-bigint = { workspace = true }
 num-traits = { workspace = true }
 rand = { workspace = true }
 rustc-hash = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
@@ -54,6 +54,7 @@ lalrpop = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
+serde_json = { workspace = true }
 tracing-test = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

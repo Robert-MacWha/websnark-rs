@@ -1,42 +1,44 @@
 use std::collections::HashMap;
 
 use ark_bn254::{Fr, G1Affine, G2Affine};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
+#[cfg(feature = "serde")]
 use crate::serde::{fr_map_vec_serde, g1_serde, g1_vec_serde, g2_serde, g2_vec_serde};
 
 /// CircomV1-compatible proving key
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ProvingKey {
-    #[serde(rename = "A", with = "g1_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "A", with = "g1_vec_serde"))]
     pub a: Vec<G1Affine>,
-    #[serde(rename = "B1", with = "g1_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "B1", with = "g1_vec_serde"))]
     pub b_g1: Vec<G1Affine>,
-    #[serde(rename = "B2", with = "g2_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "B2", with = "g2_vec_serde"))]
     pub b_g2: Vec<G2Affine>,
-    #[serde(rename = "C", with = "g1_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "C", with = "g1_vec_serde"))]
     pub c: Vec<G1Affine>,
-    #[serde(rename = "nVars")]
+    #[cfg_attr(feature = "serde", serde(rename = "nVars"))]
     pub n_vars: u64,
-    #[serde(rename = "nPublic")]
+    #[cfg_attr(feature = "serde", serde(rename = "nPublic"))]
     pub n_public: u64,
-    #[serde(rename = "vk_alfa_1", with = "g1_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_alfa_1", with = "g1_serde"))]
     pub vk_alpha_g1: G1Affine,
-    #[serde(rename = "vk_beta_1", with = "g1_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_1", with = "g1_serde"))]
     pub vk_beta_g1: G1Affine,
-    #[serde(rename = "vk_beta_2", with = "g2_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_2", with = "g2_serde"))]
     pub vk_beta_g2: G2Affine,
-    #[serde(rename = "vk_delta_1", with = "g1_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_1", with = "g1_serde"))]
     pub vk_delta_g1: G1Affine,
-    #[serde(rename = "vk_delta_2", with = "g2_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_2", with = "g2_serde"))]
     pub vk_delta_g2: G2Affine,
-    #[serde(rename = "hExps", with = "g1_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "hExps", with = "g1_vec_serde"))]
     pub h_exps: Vec<G1Affine>,
-    #[serde(rename = "domainSize")]
+    #[cfg_attr(feature = "serde", serde(rename = "domainSize"))]
     pub domain_size: u64,
-    #[serde(rename = "polsA", with = "fr_map_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "polsA", with = "fr_map_vec_serde"))]
     pub pols_a: Vec<HashMap<u64, Fr>>,
-    #[serde(rename = "polsB", with = "fr_map_vec_serde")]
+    #[cfg_attr(feature = "serde", serde(rename = "polsB", with = "fr_map_vec_serde"))]
     pub pols_b: Vec<HashMap<u64, Fr>>,
 }
 
