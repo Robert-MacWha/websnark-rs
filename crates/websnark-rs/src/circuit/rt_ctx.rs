@@ -34,7 +34,8 @@ pub struct RTCtx {
 
 impl RTCtx {
     pub fn new(circuit: Circuit) -> Result<Self, CircuitError> {
-        let n_signals = circuit.n_signals as usize;
+        let n_signals = circuit.n_signals;
+        #[allow(clippy::cast_possible_wrap)]
         let not_init_signals = circuit
             .components
             .iter()
@@ -79,20 +80,20 @@ impl RTCtx {
     pub fn set_signal(
         &mut self,
         name: &str,
-        sels: Vec<Value>,
+        selectors: Vec<Value>,
         value: Value,
     ) -> Result<(), CircuitError> {
-        let sels = into_numbers(sels)?;
+        let selectors = into_numbers(selectors)?;
         let value = value.into_fr()?;
 
-        let full = self.build_signal_name(name, sels)?;
+        let full = self.build_signal_name(name, selectors)?;
         self.set_signal_full(&full, value)
     }
 
-    pub fn get_signal(&self, name: &str, sels: Vec<Value>) -> Result<Value, CircuitError> {
-        let sels = into_numbers(sels)?;
+    pub fn get_signal(&self, name: &str, selectors: Vec<Value>) -> Result<Value, CircuitError> {
+        let selectors = into_numbers(selectors)?;
 
-        let full = self.build_signal_name(name, sels)?;
+        let full = self.build_signal_name(name, selectors)?;
         self.get_signal_full(&full).map(Into::into)
     }
 
@@ -129,16 +130,16 @@ impl RTCtx {
     pub fn set_var(
         &mut self,
         name: &str,
-        sels: Vec<Value>,
+        selectors: Vec<Value>,
         value: Value,
     ) -> Result<Value, CircuitError> {
-        let sels = into_numbers(sels)?;
+        let selectors = into_numbers(selectors)?;
         let scope = self
             .scopes
             .last_mut()
             .ok_or(CircuitError::RuntimeError("No active scope".to_string()))?;
 
-        if sels.is_empty() {
+        if selectors.is_empty() {
             scope.insert(name.to_string(), value.clone());
             return Ok(value);
         }
@@ -148,28 +149,27 @@ impl RTCtx {
             .or_insert_with(|| Value::Array(Vec::new()));
         let Value::Array(arr) = entry else {
             return Err(CircuitError::RuntimeError(format!(
-                "Variable is not an array: {}",
-                name
+                "Variable is not an array: {name}"
             )));
         };
-        set_var_array(arr, &sels, value.clone());
+        set_var_array(arr, &selectors, value.clone());
         Ok(value)
     }
 
-    pub fn get_var(&self, name: &str, sels: Vec<Value>) -> Result<Value, CircuitError> {
-        let sels = into_numbers(sels)?;
+    pub fn get_var(&self, name: &str, selectors: Vec<Value>) -> Result<Value, CircuitError> {
+        let selectors = into_numbers(selectors)?;
         for scope in self.scopes.iter().rev() {
             if let Some(v) = scope.get(name) {
-                return select(v, &sels).cloned();
+                return select(v, &selectors).cloned();
             }
         }
         Err(CircuitError::RuntimeError(format!(
-            "Variable not defined: {}",
-            name
+            "Variable not defined: {name}"
         )))
     }
 
-    pub fn call_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value, CircuitError> {
+    #[allow(clippy::unused_self)]
+    pub fn call_function(&self, _name: &str, _args: &[Value]) -> Result<Value, CircuitError> {
         Err(CircuitError::RuntimeError(
             "call_function is not supported yet".to_string(),
         ))
@@ -208,13 +208,13 @@ impl RTCtx {
         Ok(())
     }
 
-    fn build_signal_name(&self, name: &str, sels: Vec<u32>) -> Result<String, CircuitError> {
+    fn build_signal_name(&self, name: &str, selectors: Vec<u32>) -> Result<String, CircuitError> {
         let mut s = if let Some(current) = &self.current_component {
-            format!("{}.{}", current, name)
+            format!("{current}.{name}")
         } else {
             name.to_string()
         };
-        append_sels(&mut s, sels)?;
+        append_selectors(&mut s, selectors)?;
         Ok(s)
     }
 
@@ -228,23 +228,23 @@ impl RTCtx {
         let mut s = if component_name == "one" {
             "one".to_string()
         } else if let Some(current) = &self.current_component {
-            format!("{}.{}", current, component_name)
+            format!("{current}.{component_name}")
         } else {
             component_name.to_string()
         };
-        append_sels(&mut s, component_sels)?;
+        append_selectors(&mut s, component_sels)?;
         s.push('.');
         s.push_str(signal_name);
-        append_sels(&mut s, signal_sels)?;
+        append_selectors(&mut s, signal_sels)?;
         Ok(s)
     }
 
     fn signal_idx(&self, full: &str) -> Result<usize, CircuitError> {
         if let Some(&idx) = self.circuit.signal_name2_idx.get(full) {
-            return Ok(idx as usize);
+            return Ok(idx);
         }
         full.parse::<usize>()
-            .map_err(|e| CircuitError::RuntimeError(format!("Invalid signal index: {}", e)))
+            .map_err(|e| CircuitError::RuntimeError(format!("Invalid signal index: {e}")))
     }
 
     fn get_signal_full(&self, full: &str) -> Result<Fr, CircuitError> {
@@ -262,7 +262,6 @@ impl RTCtx {
         let mut to_trigger = Vec::new();
         let trigs = self.circuit.signals[s_id].trigger_components.clone();
         for &c in &trigs {
-            let c = c as usize;
             if first_init {
                 self.not_init_signals[c] -= 1;
             }
@@ -278,6 +277,7 @@ impl RTCtx {
         Ok(())
     }
 
+    #[allow(clippy::unused_self)]
     pub fn assert_eq(&self, a: &Fr, b: &Fr, err: &str) -> Result<(), CircuitError> {
         if a != b {
             return Err(CircuitError::AssertionFailed(
@@ -293,7 +293,7 @@ impl RTCtx {
 fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>, CircuitError> {
     Ok(vals
         .into_iter()
-        .map(|v| v.into_u32())
+        .map(super::value::Value::into_u32)
         .collect::<Result<Vec<_>, ValueError>>()?)
 }
 
@@ -312,7 +312,7 @@ fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) {
     let Value::Array(nested) = &mut a[idx] else {
         unreachable!()
     };
-    set_var_array(nested, &sels[1..], value)
+    set_var_array(nested, &sels[1..], value);
 }
 
 fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value, CircuitError> {
@@ -329,11 +329,10 @@ fn select<'a>(a: &'a Value, sels: &[u32]) -> Result<&'a Value, CircuitError> {
     select(next, &sels[1..])
 }
 
-fn append_sels(out: &mut String, sels: Vec<u32>) -> Result<(), CircuitError> {
-    for s in sels {
-        write!(out, "[{}]", s).map_err(|e| {
-            CircuitError::RuntimeError(format!("Failed to build signal name: {}", e))
-        })?;
+fn append_selectors(out: &mut String, selectors: Vec<u32>) -> Result<(), CircuitError> {
+    for s in selectors {
+        write!(out, "[{s}]")
+            .map_err(|e| CircuitError::RuntimeError(format!("Failed to build signal name: {e}")))?;
     }
     Ok(())
 }

@@ -26,8 +26,8 @@ mod bench {
                 || (pk.clone(), witness.clone()),
                 |(pk, witness)| {
                     generate_proof(
-                        black_box(pk),
-                        black_box(witness),
+                        black_box(&pk),
+                        black_box(&witness),
                         black_box(r),
                         black_box(s),
                     )

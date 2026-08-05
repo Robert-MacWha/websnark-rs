@@ -1,17 +1,20 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::BuildHasher};
 
 use crate::circuit::{Circuit, CircuitError, rt_ctx::RTCtx, value::Value, witness::Witness};
 use ark_bn254::Fr;
 use num_bigint::BigInt;
 use tracing::instrument;
 
-/// Generate the witness for a given circuit and input signals.
+/// Generate the witness for a given circuit and input signals. The `input_signals`
+/// map should contain the named input values for the circuit.
 ///
-/// The `input_signals` map should contain the named input values for the circuit.
+/// # Errors
+/// Returns an error if the circuit or input signals are invalid, or if the
+/// witness cannot be generated.
 #[instrument(skip_all)]
-pub fn generate_witness(
+pub fn generate_witness<S: BuildHasher>(
     circuit: Circuit,
-    input_signals: HashMap<String, Value>,
+    input_signals: HashMap<String, Value, S>,
 ) -> Result<Witness, CircuitError> {
     let mut ctx = RTCtx::new(circuit)?;
     ctx.set_signal("one", vec![], 1.into())?;
@@ -29,20 +32,20 @@ pub fn generate_witness(
 
     for i in 0..ctx.circuit.n_inputs {
         let idx = ctx.circuit.input_idx(i)?;
-        if ctx.witness[idx as usize].is_none() {
-            let signal_name = ctx.circuit.signal_names(i)?;
+        if ctx.witness[idx].is_none() {
+            let signal_name = ctx.circuit.signal_name(i)?;
             return Err(CircuitError::SignalNotAssigned(signal_name));
         }
     }
 
     for i in 0..ctx.witness.len() {
         if ctx.witness[i].is_none() {
-            let signal_name = ctx.circuit.signal_names(i as u64)?;
+            let signal_name = ctx.circuit.signal_name(i)?;
             return Err(CircuitError::SignalNotAssigned(signal_name));
         }
     }
 
-    let output = ctx.witness[..ctx.circuit.n_vars as usize]
+    let output = ctx.witness[..ctx.circuit.n_vars]
         .iter()
         .map(|v| v.ok_or(CircuitError::SignalNotAssigned("unreachable".to_string())))
         .collect::<Result<Vec<Fr>, CircuitError>>()?;

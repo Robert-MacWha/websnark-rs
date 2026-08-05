@@ -7,16 +7,16 @@ use crate::circuit::{CircuitError, value::Value};
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Circuit {
-    pub n_pub_inputs: u64,
-    pub n_prv_inputs: u64,
-    pub n_inputs: u64,
-    pub n_outputs: u64,
-    pub n_vars: u64,
-    pub n_signals: u64,
-    pub n_constants: u64,
+    pub n_pub_inputs: usize,
+    pub n_prv_inputs: usize,
+    pub n_inputs: usize,
+    pub n_outputs: usize,
+    pub n_vars: usize,
+    pub n_signals: usize,
+    pub n_constants: usize,
 
-    pub signal_name2_idx: FxHashMap<String, u64>,
-    pub component_name2_idx: FxHashMap<String, u64>,
+    pub signal_name2_idx: FxHashMap<String, usize>,
+    pub component_name2_idx: FxHashMap<String, usize>,
 
     pub signals: Vec<Signal>,
     pub components: Vec<Component>,
@@ -30,7 +30,7 @@ pub struct Circuit {
 pub struct Signal {
     pub names: Vec<String>,
     #[cfg_attr(feature = "serde", serde(rename = "triggerComponents"))]
-    pub trigger_components: Vec<u64>,
+    pub trigger_components: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ pub struct Component {
     pub template: String,
     pub params: FxHashMap<String, Value>,
     #[cfg_attr(feature = "serde", serde(rename = "inputSignals"))]
-    pub input_signals: u64,
+    pub input_signals: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -52,15 +52,22 @@ pub struct Function {
 
 impl Circuit {
     /// Returns the index of the i-th input
-    pub fn input_idx(&self, i: u64) -> Result<u64, CircuitError> {
+    ///
+    /// # Errors
+    /// Returns an error if the input index is out of bounds
+    pub fn input_idx(&self, i: usize) -> Result<usize, CircuitError> {
         if i >= self.n_inputs {
             return Err(CircuitError::InputIndexOutOfBounds(i, self.n_inputs));
         }
         Ok(self.n_outputs + 1 + i)
     }
 
-    pub fn signal_names(&self, i: u64) -> Result<String, CircuitError> {
+    /// Returns the name of the i-th input signal
+    ///
+    /// # Errors
+    /// Returns an error if the input index is out of bounds
+    pub fn signal_name(&self, i: usize) -> Result<String, CircuitError> {
         let idx = self.input_idx(i)?;
-        Ok(self.signals[idx as usize].names.join(","))
+        Ok(self.signals[idx].names.join(","))
     }
 }

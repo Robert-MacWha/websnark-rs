@@ -1,12 +1,12 @@
-//! Parses and executes CircomV1 function definitions.
+//! Parses and executes `CircomV1` function definitions.
 //!
-//! CircomV1 witness generation involves snarkJS `exec`-ing runtime Javascript
+//! `CircomV1` witness generation involves snarkJS `exec`-ing runtime Javascript
 //! code from the witness.json files. This module provides a Rust implementation
 //! that parses and interprets the function definitions, allowing us to generate
 //! witnesses without any JS engines.
 
 lalrpop_util::lalrpop_mod!(
-    #[allow(clippy::all, clippy::unwrap_used)]
+    #[allow(clippy::all, clippy::pedantic, clippy::unwrap_used)]
     grammer,
     "circom/grammer.rs"
 );
@@ -24,7 +24,7 @@ pub fn parse_function(input: &str) -> Result<ast::Function, ParseError> {
     let input = input.replace(";;", ";");
     grammer::FunctionParser::new()
         .parse(&input)
-        .map_err(|e| ParseError(e.map_token(|t| t.to_string()).map_error(|e| e.to_string())))
+        .map_err(|e| ParseError(e.map_token(|t| t.to_string()).map_error(std::string::ToString::to_string)))
 }
 
 #[cfg(test)]

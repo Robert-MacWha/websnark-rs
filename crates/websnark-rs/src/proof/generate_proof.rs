@@ -11,10 +11,14 @@ use crate::{
     proving_key::ProvingKey,
 };
 
-/// Generate a zk-SNARK groth16 proof for a given proving key and witness, using random scalars `r` and `s`.
+/// Generate a zk-SNARK groth16 proof for a given proving key and witness, using
+/// random scalars `r` and `s`.
+///
+/// # Errors
+/// Returns an error if the witness is invalid, or the proof cannot be generated.
 pub fn generate_random_proof(
-    pk: ProvingKey,
-    w: Witness,
+    pk: &ProvingKey,
+    w: &Witness,
     rng: &mut impl CryptoRng,
 ) -> Result<(Proof, Vec<Fr>), ProofError> {
     let mut bytes = [0u8; 32];
@@ -27,25 +31,25 @@ pub fn generate_random_proof(
     generate_proof(pk, w, r, s)
 }
 
-/// Generate a zk-SNARK groth16 proof for a given proving key, witness, and random scalars `r` and `s`.
+/// Generate a zk-SNARK groth16 proof for a given proving key, witness, and scalars `r` and `s`.
+///
+/// # Errors
+/// Returns an error if the witness is invalid, or the proof cannot be generated.
 #[instrument(skip_all)]
 pub fn generate_proof(
-    pk: ProvingKey,
-    w: Witness,
+    pk: &ProvingKey,
+    w: &Witness,
     r: Fr,
     s: Fr,
 ) -> Result<(Proof, Vec<Fr>), ProofError> {
-    let mut proof_a = G1Projective::msm_unchecked(&pk.a, &w);
-    let mut proof_b_g1 = G1Projective::msm_unchecked(&pk.b_g1, &w);
-    let mut proof_b_g2 = G2Projective::msm_unchecked(&pk.b_g2, &w);
+    let mut proof_a = G1Projective::msm_unchecked(&pk.a, w);
+    let mut proof_b_g1 = G1Projective::msm_unchecked(&pk.b_g1, w);
+    let mut proof_b_g2 = G2Projective::msm_unchecked(&pk.b_g2, w);
 
-    let start = pk.n_public as usize + 1;
-    let mut proof_c = G1Projective::msm_unchecked(
-        &pk.c[start..pk.n_vars as usize],
-        &w[start..pk.n_vars as usize],
-    );
+    let start = pk.n_public + 1;
+    let mut proof_c = G1Projective::msm_unchecked(&pk.c[start..pk.n_vars], &w[start..pk.n_vars]);
 
-    let h = calculate_h(&pk, &w)?;
+    let h = calculate_h(pk, w)?;
     let proof_c_h = G1Projective::msm_unchecked(&pk.h_exps, &h);
 
     // A = α + Σ wᵢAᵢ + r·δ
@@ -80,19 +84,19 @@ pub fn generate_proof(
 // snarkjs/websnark proving keys order polsA/polsB around ω_7 (7^((R-1)/2^28)), not
 // ark-bn254's ω_5 — so the FFT runs over `FrSnarkjs` and we convert at the boundary.
 fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
-    let m = pk.domain_size as usize;
+    let m = pk.domain_size;
 
     let to_s = |x: Fr| FrSnarkjs::from_bigint(x.into_bigint());
 
     let mut pol_at = vec![FrSnarkjs::ZERO; m];
     let mut pol_bt = vec![FrSnarkjs::ZERO; m];
-    for (i, w_i) in w.iter().enumerate().take(pk.n_vars as usize) {
+    for (i, w_i) in w.iter().enumerate().take(pk.n_vars) {
         let w_i = to_s(*w_i).ok_or(ProofError::InvalidWitness(*w_i))?;
         for (&j, coeff) in &pk.pols_a[i] {
-            pol_at[j as usize] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
+            pol_at[j] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
         }
         for (&j, coeff) in &pk.pols_b[i] {
-            pol_bt[j as usize] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
+            pol_bt[j] += w_i * to_s(*coeff).ok_or(ProofError::InvalidCoefficient)?;
         }
     }
 
@@ -174,7 +178,7 @@ mod tests {
         let r = Fr::ZERO;
         let s = Fr::ZERO;
 
-        let (proof, _) = generate_proof(pk, witness, r, s).unwrap();
+        let (proof, _) = generate_proof(&pk, &witness, r, s).unwrap();
 
         assert_eq!(proof, expected_proof);
     }

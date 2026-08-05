@@ -70,3 +70,7 @@ harness = false
 
 [package.metadata.wasm-pack.profile.profiling]
 wasm-opt = ['-O', '-g']
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+similar_names = { level = "allow" }

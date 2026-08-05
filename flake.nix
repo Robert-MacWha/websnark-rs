@@ -37,10 +37,6 @@
           python3 = oldPkgs.python39;
         };
 
-        unstablePkgs = import unstable {
-          inherit system;
-        };
-
         rustToolchain = pkgs.rust-bin.nightly."2025-11-15".default.override {
           extensions = [
             "rust-src"
@@ -61,6 +57,7 @@
               rustToolchain
               rustfmtNightly
 
+              pkgs.bacon
               pkgs.nodejs
               pkgs.wasm-bindgen-cli_0_2_108
               pkgs.wasm-pack

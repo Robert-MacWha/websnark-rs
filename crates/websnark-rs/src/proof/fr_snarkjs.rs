@@ -7,6 +7,6 @@ use ark_ff::fields::{Fp256, MontBackend, MontConfig};
 #[generator = "7"]
 pub struct FrSnarkjsConfig;
 
-/// SnarkJS-compatible field element with generator = 7, so TWO_ADIC_ROOT_OF_UNITY
+/// SnarkJS-compatible field element with generator = 7, so `TWO_ADIC_ROOT_OF_UNITY`
 /// matches snarkjs/websnark's convention.
 pub type FrSnarkjs = Fp256<MontBackend<FrSnarkjsConfig, 4>>;

@@ -27,7 +27,7 @@ pub enum CircuitError {
     #[error("assertion failed: {0} != {1}: {2}")]
     AssertionFailed(Box<ark_bn254::Fr>, Box<ark_bn254::Fr>, String),
     #[error("input index out of bounds: {0} >= {1}")]
-    InputIndexOutOfBounds(u64, u64),
+    InputIndexOutOfBounds(usize, usize),
     #[error("signal not assigned: {0}")]
     SignalNotAssigned(String),
     #[error("invalid inverse: base is zero")]

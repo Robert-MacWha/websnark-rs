@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+#[cfg(feature = "serde")]
+use crate::serde::{fr_map_vec_serde, g1_serde, g1_vec_serde, g2_serde, g2_vec_serde};
 use ark_bn254::{Fr, G1Affine, G2Affine};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use crate::serde::{fr_map_vec_serde, g1_serde, g1_vec_serde, g2_serde, g2_vec_serde};
 
 /// CircomV1-compatible proving key
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,9 +19,9 @@ pub struct ProvingKey {
     #[cfg_attr(feature = "serde", serde(rename = "C", with = "g1_vec_serde"))]
     pub c: Vec<G1Affine>,
     #[cfg_attr(feature = "serde", serde(rename = "nVars"))]
-    pub n_vars: u64,
+    pub n_vars: usize,
     #[cfg_attr(feature = "serde", serde(rename = "nPublic"))]
-    pub n_public: u64,
+    pub n_public: usize,
     #[cfg_attr(feature = "serde", serde(rename = "vk_alfa_1", with = "g1_serde"))]
     pub vk_alpha_g1: G1Affine,
     #[cfg_attr(feature = "serde", serde(rename = "vk_beta_1", with = "g1_serde"))]
@@ -35,11 +35,11 @@ pub struct ProvingKey {
     #[cfg_attr(feature = "serde", serde(rename = "hExps", with = "g1_vec_serde"))]
     pub h_exps: Vec<G1Affine>,
     #[cfg_attr(feature = "serde", serde(rename = "domainSize"))]
-    pub domain_size: u64,
+    pub domain_size: usize,
     #[cfg_attr(feature = "serde", serde(rename = "polsA", with = "fr_map_vec_serde"))]
-    pub pols_a: Vec<HashMap<u64, Fr>>,
+    pub pols_a: Vec<HashMap<usize, Fr>>,
     #[cfg_attr(feature = "serde", serde(rename = "polsB", with = "fr_map_vec_serde"))]
-    pub pols_b: Vec<HashMap<u64, Fr>>,
+    pub pols_b: Vec<HashMap<usize, Fr>>,
 }
 
 #[cfg(test)]

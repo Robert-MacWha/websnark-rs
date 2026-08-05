@@ -22,7 +22,7 @@ let pk: ProvingKey = serde_json::from_str(proving_key_json).unwrap();
 let inputs: HashMap<String, Value> = serde_json::from_str(inputs_json).unwrap();
 
 let witness = generate_witness(circuit, inputs).unwrap();
-let (proof, pub_signals) = generate_proof(pk, witness, Fr::ZERO, Fr::ZERO).unwrap();
+let (proof, pub_signals) = generate_proof(&pk, &witness, Fr::ZERO, Fr::ZERO).unwrap();
 ```
 
 ## How it works

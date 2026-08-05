@@ -30,7 +30,7 @@ pub mod g1_serde {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G1Affine, D::Error> {
         if d.is_human_readable() {
             let arr = <[String; 3]>::deserialize(d)?;
-            super::parse_g1(arr).map_err(serde::de::Error::custom)
+            super::parse_g1(&arr).map_err(serde::de::Error::custom)
         } else {
             let bytes = Vec::<u8>::deserialize(d)?;
             super::g1_from_bytes(&bytes).map_err(serde::de::Error::custom)
@@ -53,7 +53,7 @@ pub mod g2_serde {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<G2Affine, D::Error> {
         if d.is_human_readable() {
             let arr = <[[String; 2]; 3]>::deserialize(d)?;
-            super::parse_f2(arr).map_err(serde::de::Error::custom)
+            super::parse_f2(&arr).map_err(serde::de::Error::custom)
         } else {
             let bytes = Vec::<u8>::deserialize(d)?;
             super::g2_from_bytes(&bytes).map_err(serde::de::Error::custom)
@@ -84,7 +84,7 @@ pub mod g1_vec_serde {
             let arrs = Vec::<Option<[String; 3]>>::deserialize(d)?;
             arrs.into_iter()
                 .map(|opt| match opt {
-                    Some(arr) => super::parse_g1(arr).map_err(serde::de::Error::custom),
+                    Some(arr) => super::parse_g1(&arr).map_err(serde::de::Error::custom),
                     None => Ok(G1Affine::zero()),
                 })
                 .collect()
@@ -118,7 +118,7 @@ pub mod g2_vec_serde {
         if d.is_human_readable() {
             let arrs = Vec::<[[String; 2]; 3]>::deserialize(d)?;
             arrs.into_iter()
-                .map(|arr| super::parse_f2(arr).map_err(serde::de::Error::custom))
+                .map(|arr| super::parse_f2(&arr).map_err(serde::de::Error::custom))
                 .collect()
         } else {
             let vecs = Vec::<Vec<u8>>::deserialize(d)?;
@@ -134,9 +134,9 @@ pub mod fr_map_vec_serde {
     use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
     use std::collections::HashMap;
 
-    pub fn serialize<S: Serializer>(v: &[HashMap<u64, Fr>], s: S) -> Result<S::Ok, S::Error> {
+    pub fn serialize<S: Serializer>(v: &[HashMap<usize, Fr>], s: S) -> Result<S::Ok, S::Error> {
         if s.is_human_readable() {
-            let string_maps: Vec<HashMap<u64, String>> = v
+            let string_maps: Vec<HashMap<usize, String>> = v
                 .iter()
                 .map(|map| map.iter().map(|(&k, fr)| (k, fr.to_string())).collect())
                 .collect();
@@ -144,7 +144,7 @@ pub mod fr_map_vec_serde {
         } else {
             let mut outer = s.serialize_seq(Some(v.len()))?;
             for map in v {
-                let pairs: Vec<(u64, [u8; 32])> = map
+                let pairs: Vec<(usize, [u8; 32])> = map
                     .iter()
                     .map(|(&k, fr)| (k, super::fr_to_bytes(*fr)))
                     .collect();
@@ -154,12 +154,14 @@ pub mod fr_map_vec_serde {
         }
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<HashMap<u64, Fr>>, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        d: D,
+    ) -> Result<Vec<HashMap<usize, Fr>>, D::Error> {
         if d.is_human_readable() {
-            let string_maps = Vec::<HashMap<u64, String>>::deserialize(d)?;
-            super::parse_pols(string_maps).map_err(serde::de::Error::custom)
+            let string_maps = Vec::<HashMap<usize, String>>::deserialize(d)?;
+            super::parse_pols(&string_maps).map_err(serde::de::Error::custom)
         } else {
-            let outer = Vec::<Vec<(u64, [u8; 32])>>::deserialize(d)?;
+            let outer = Vec::<Vec<(usize, [u8; 32])>>::deserialize(d)?;
             outer
                 .into_iter()
                 .map(|pairs| {
@@ -170,7 +172,7 @@ pub mod fr_map_vec_serde {
                                 .map(|fr| (k, fr))
                                 .map_err(serde::de::Error::custom)
                         })
-                        .collect::<Result<HashMap<u64, Fr>, _>>()
+                        .collect::<Result<HashMap<usize, Fr>, _>>()
                 })
                 .collect()
         }
@@ -191,7 +193,7 @@ fn fr_to_bytes(fr: Fr) -> [u8; 32] {
 fn fr_from_bytes(bytes: [u8; 32]) -> Result<Fr, TryFromSliceError> {
     let mut limbs = [0u64; 4];
     for (i, limb) in limbs.iter_mut().enumerate() {
-        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into()?)
+        *limb = u64::from_le_bytes(bytes[i * 8..(i + 1) * 8].try_into()?);
     }
     Ok(Fr::from(ark_ff::BigInt(limbs)))
 }
@@ -292,37 +294,37 @@ fn g2_to_string(value: G2Affine) -> [[String; 2]; 3] {
     [[x0, x1], [y0, y1], ["1".to_string(), "0".to_string()]]
 }
 
-fn parse_g1(value: [String; 3]) -> Result<G1Affine, FqParseError> {
+fn parse_g1(value: &[String; 3]) -> Result<G1Affine, FqParseError> {
     let is_zero = value[2] == "0";
     if is_zero {
         return Ok(G1Affine::zero());
     }
 
-    let x = Fq::from_str(&value[0]).map_err(|_| FqParseError::InvalidField())?;
-    let y = Fq::from_str(&value[1]).map_err(|_| FqParseError::InvalidField())?;
+    let x = Fq::from_str(&value[0]).map_err(|()| FqParseError::InvalidField())?;
+    let y = Fq::from_str(&value[1]).map_err(|()| FqParseError::InvalidField())?;
 
     Ok(G1Affine::new_unchecked(x, y))
 }
 
-fn parse_f2(value: [[String; 2]; 3]) -> Result<G2Affine, FqParseError> {
+fn parse_f2(value: &[[String; 2]; 3]) -> Result<G2Affine, FqParseError> {
     let is_zero = value[2][0] == "0" && value[2][1] == "0";
     if is_zero {
         return Ok(G2Affine::zero());
     }
 
     let x = Fq2::new(
-        Fq::from_str(&value[0][0]).map_err(|_| FqParseError::InvalidField())?,
-        Fq::from_str(&value[0][1]).map_err(|_| FqParseError::InvalidField())?,
+        Fq::from_str(&value[0][0]).map_err(|()| FqParseError::InvalidField())?,
+        Fq::from_str(&value[0][1]).map_err(|()| FqParseError::InvalidField())?,
     );
     let y = Fq2::new(
-        Fq::from_str(&value[1][0]).map_err(|_| FqParseError::InvalidField())?,
-        Fq::from_str(&value[1][1]).map_err(|_| FqParseError::InvalidField())?,
+        Fq::from_str(&value[1][0]).map_err(|()| FqParseError::InvalidField())?,
+        Fq::from_str(&value[1][1]).map_err(|()| FqParseError::InvalidField())?,
     );
 
     Ok(G2Affine::new_unchecked(x, y))
 }
 
-fn parse_pols(value: Vec<HashMap<u64, String>>) -> Result<Vec<HashMap<u64, Fr>>, FqParseError> {
+fn parse_pols(value: &[HashMap<usize, String>]) -> Result<Vec<HashMap<usize, Fr>>, FqParseError> {
     value
         .iter()
         .map(|map| {
@@ -330,7 +332,7 @@ fn parse_pols(value: Vec<HashMap<u64, String>>) -> Result<Vec<HashMap<u64, Fr>>,
                 .map(|(&k, v)| {
                     Ok((
                         k,
-                        Fr::from_str(v).map_err(|_| FqParseError::InvalidField())?,
+                        Fr::from_str(v).map_err(|()| FqParseError::InvalidField())?,
                     ))
                 })
                 .collect()

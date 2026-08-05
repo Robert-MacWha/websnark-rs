@@ -72,7 +72,7 @@ impl Value {
 
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        Value::Fr(Fr::from(value as u64))
+        Value::Fr(Fr::from(u64::from(value)))
     }
 }
 

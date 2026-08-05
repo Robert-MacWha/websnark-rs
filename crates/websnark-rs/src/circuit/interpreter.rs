@@ -81,6 +81,7 @@ fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, CircuitEr
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
     match expr {
         Expr::NumberLit(fr) => Ok(Value::Fr(*fr)),
@@ -180,7 +181,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
 
             base.inverse()
                 .ok_or(CircuitError::InvalidInverse)
-                .map(|inv| inv.into())
+                .map(std::convert::Into::into)
         }
         Expr::ModPow(base, exp, _modulos) => {
             let base = execute_expr(ctx, base)?.into_fr()?;
@@ -191,7 +192,7 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
             //     bail!("modulos must be equal to the prime");
             // }
 
-            Ok(base.pow([exp as u64]).into())
+            Ok(base.pow([u64::from(exp)]).into())
         }
         Expr::LogicalOr(lhs, rhs) => {
             let lhs = execute_expr(ctx, lhs)?;
@@ -203,10 +204,10 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
         }
         Expr::Ternary { cond, then, else_ } => {
             let cond = execute_expr(ctx, cond)?;
-            if !cond.is_zero()? {
-                execute_expr(ctx, then)
-            } else {
+            if cond.is_zero()? {
                 execute_expr(ctx, else_)
+            } else {
+                execute_expr(ctx, then)
             }
         }
     }

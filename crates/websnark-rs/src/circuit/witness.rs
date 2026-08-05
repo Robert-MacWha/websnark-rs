@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize, de::Error, ser::SerializeSeq};
 pub struct Witness(Vec<Fr>);
 
 impl Witness {
+    #[must_use] 
     pub fn new(witness: Vec<Fr>) -> Self {
         Witness(witness)
     }
@@ -50,7 +51,7 @@ impl<'de> Deserialize<'de> for Witness {
                 .into_iter()
                 .map(|v| {
                     Fr::from_str(&v)
-                        .map_err(|_| D::Error::custom(format!("Failed to parse Fr from '{v}'")))
+                        .map_err(|()| D::Error::custom(format!("Failed to parse Fr from '{v}'")))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(Witness(frs))
