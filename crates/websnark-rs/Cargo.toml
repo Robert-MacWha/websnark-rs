@@ -12,7 +12,7 @@ exclude = ["*/testdata/**/*", ".gitignore"]
 
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]
-features = []
+features = ["serde", "asm", "parallel"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -42,6 +42,7 @@ rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+circom-witness-rs = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true }
