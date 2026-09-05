@@ -4,9 +4,9 @@ mod bench {
 
     use criterion::{Criterion, criterion_group};
     use std::hint::black_box;
-    use websnark_rs::circuit::{Circuit, Value, generate_witness};
+    use websnark_rs::circuit::{Circuit, Value};
 
-    fn bench_generate_witness(c: &mut Criterion) {
+    fn bench_witnes(c: &mut Criterion) {
         let circuit_str =
             std::fs::read_to_string("src/testdata/withdraw.json").expect("read circuit");
         let input_str = std::fs::read_to_string("src/testdata/withdraw_input_signals.json")
@@ -20,17 +20,15 @@ mod bench {
         group.sample_size(20);
         group.bench_function("withdraw", |b| {
             b.iter_batched(
-                || (circuit.clone(), input_signals.clone()),
-                |(circuit, input_signals)| {
-                    generate_witness(black_box(circuit), black_box(input_signals)).expect("witness")
-                },
+                || input_signals.clone(),
+                |input_signals| circuit.witness(black_box(input_signals)).expect("witness"),
                 criterion::BatchSize::LargeInput,
             )
         });
         group.finish();
     }
 
-    criterion_group!(benches, bench_generate_witness);
+    criterion_group!(benches, bench_witnes);
 }
 
 #[cfg(not(target_arch = "wasm32"))]

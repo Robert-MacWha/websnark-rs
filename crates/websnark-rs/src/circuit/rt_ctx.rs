@@ -19,8 +19,8 @@ use crate::{
 ///
 /// Manages the circuit, current witness values, variable scopes, and component
 /// triggering logic.  Based on snarkjs's `src/calculateWitness.js::RTCtx` class.
-pub struct RTCtx {
-    pub circuit: Circuit,
+pub struct RTCtx<'a> {
+    pub circuit: &'a Circuit,
     pub witness: Vec<Option<Fr>>,
     pub not_init_signals: Vec<i64>,
     pub current_component: Option<String>,
@@ -32,8 +32,8 @@ pub struct RTCtx {
     functions: FxHashMap<String, Rc<Function>>,
 }
 
-impl RTCtx {
-    pub fn new(circuit: Circuit) -> Result<Self, CircuitError> {
+impl<'a> RTCtx<'a> {
+    pub fn new(circuit: &'a Circuit) -> Result<Self, CircuitError> {
         let n_signals = circuit.n_signals;
         #[allow(clippy::cast_possible_wrap)]
         let not_init_signals = circuit
@@ -341,15 +341,20 @@ fn append_selectors(out: &mut String, selectors: Vec<u32>) -> Result<(), Circuit
 mod tests {
     use super::*;
 
-    fn fixture() -> RTCtx {
+    fn circuit() -> Circuit {
         let data = include_str!("../testdata/withdraw.json");
-        let circuit: Circuit = serde_json::from_str(data).unwrap();
-        RTCtx::new(circuit).unwrap()
+        serde_json::from_str(data).unwrap()
+    }
+
+    fn num(n: i64) -> Value {
+        Value::Number(BigInt::from(n))
     }
 
     #[test]
     fn full_name_signal() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.current_component = Some("main".to_string());
         assert_eq!(ctx.build_signal_name("root", vec![]).unwrap(), "main.root");
         assert_eq!(
@@ -364,7 +369,9 @@ mod tests {
 
     #[test]
     fn full_name_pin() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.current_component = Some("main".to_string());
         assert_eq!(
             ctx.build_pin_name("one", vec![], "x", vec![]).unwrap(),
@@ -378,7 +385,9 @@ mod tests {
 
     #[test]
     fn set_one_signal_and_get_back() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_signal("one", vec![], 1.into()).unwrap();
         assert_eq!(
             ctx.get_signal("one", vec![]).unwrap().into_u32().unwrap(),
@@ -388,27 +397,29 @@ mod tests {
 
     #[test]
     fn not_init_signals_starts_at_input_count() {
-        let ctx = fixture();
+        let c = circuit();
+        let ctx = RTCtx::new(&c).unwrap();
+
         assert_eq!(
             ctx.not_init_signals[0],
             ctx.circuit.components[0].input_signals as i64
         );
     }
 
-    fn num(n: i64) -> Value {
-        Value::Number(BigInt::from(n))
-    }
-
     #[test]
     fn set_get_var_scalar() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_var("x", vec![], num(42)).unwrap();
         assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(42));
     }
 
     #[test]
     fn set_get_var_indexed() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_var("x", vec![num(2)], num(7)).unwrap();
         assert_eq!(ctx.get_var("x", vec![num(2)]).unwrap(), num(7));
         assert_eq!(ctx.get_var("x", vec![num(0)]).unwrap(), num(0));
@@ -417,7 +428,9 @@ mod tests {
 
     #[test]
     fn set_get_var_nested() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_var("x", vec![num(1), num(2)], num(9)).unwrap();
         assert_eq!(ctx.get_var("x", vec![num(1), num(2)]).unwrap(), num(9));
         assert_eq!(
@@ -428,7 +441,9 @@ mod tests {
 
     #[test]
     fn get_var_falls_back_to_outer_scope() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_var("x", vec![], num(5)).unwrap();
         ctx.scopes.push(FxHashMap::default());
         assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(5));
@@ -436,7 +451,9 @@ mod tests {
 
     #[test]
     fn set_var_shadows_outer_scope() {
-        let mut ctx = fixture();
+        let c = circuit();
+        let mut ctx = RTCtx::new(&c).unwrap();
+
         ctx.set_var("x", vec![], num(5)).unwrap();
         ctx.scopes.push(FxHashMap::default());
         ctx.set_var("x", vec![], num(10)).unwrap();
@@ -447,7 +464,9 @@ mod tests {
 
     #[test]
     fn get_var_undefined_errors() {
-        let ctx = fixture();
+        let c = circuit();
+        let ctx = RTCtx::new(&c).unwrap();
+
         assert!(ctx.get_var("nope", vec![]).is_err());
     }
 }

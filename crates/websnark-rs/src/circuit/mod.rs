@@ -2,14 +2,12 @@
 
 #[allow(clippy::module_inception)]
 mod circuit;
-mod generate_witness;
 mod interpreter;
 mod rt_ctx;
 pub(crate) mod value;
 mod witness;
 
-pub use circuit::{Circuit, Component, Function, Signal};
-pub use generate_witness::generate_witness;
+pub use circuit::Circuit;
 pub use value::{Value, ValueError};
 pub use witness::Witness;
 

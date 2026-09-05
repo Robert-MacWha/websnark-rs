@@ -16,7 +16,7 @@ use crate::{
 ///
 /// # Errors
 /// Returns an error if the witness is invalid, or the proof cannot be generated.
-pub fn generate_random_proof(
+pub fn prove_random(
     pk: &ProvingKey,
     w: &Witness,
     rng: &mut impl CryptoRng,
@@ -28,7 +28,7 @@ pub fn generate_random_proof(
 
     rng.fill_bytes(&mut bytes);
     let s = Fr::from_le_bytes_mod_order(&bytes);
-    generate_proof(pk, w, r, s)
+    prove(pk, w, r, s)
 }
 
 /// Generate a zk-SNARK groth16 proof for a given proving key, witness, and scalars `r` and `s`.
@@ -36,12 +36,7 @@ pub fn generate_random_proof(
 /// # Errors
 /// Returns an error if the witness is invalid, or the proof cannot be generated.
 #[instrument(skip_all)]
-pub fn generate_proof(
-    pk: &ProvingKey,
-    w: &Witness,
-    r: Fr,
-    s: Fr,
-) -> Result<(Proof, Vec<Fr>), ProofError> {
+pub fn prove(pk: &ProvingKey, w: &Witness, r: Fr, s: Fr) -> Result<(Proof, Vec<Fr>), ProofError> {
     let mut proof_a = G1Projective::msm_unchecked(&pk.a, w);
     let mut proof_b_g1 = G1Projective::msm_unchecked(&pk.b_g1, w);
     let mut proof_b_g2 = G2Projective::msm_unchecked(&pk.b_g2, w);
@@ -178,7 +173,7 @@ mod tests {
         let r = Fr::ZERO;
         let s = Fr::ZERO;
 
-        let (proof, _) = generate_proof(&pk, &witness, r, s).unwrap();
+        let (proof, _) = prove(&pk, &witness, r, s).unwrap();
 
         assert_eq!(proof, expected_proof);
     }

@@ -5,9 +5,9 @@ mod bench {
     use ark_bn254::Fr;
     use ark_ff::AdditiveGroup;
     use criterion::Criterion;
-    use websnark_rs::{circuit::Witness, proof::generate_proof, proving_key::ProvingKey};
+    use websnark_rs::{circuit::Witness, proof::prove, proving_key::ProvingKey};
 
-    fn bench_generate_proof(c: &mut Criterion) {
+    fn bench_prove(c: &mut Criterion) {
         let pk_str = std::fs::read_to_string("src/testdata/withdraw_proving_key.json")
             .expect("read proving key");
         let witness_str =
@@ -19,13 +19,13 @@ mod bench {
         let r = Fr::ZERO;
         let s = Fr::ZERO;
 
-        let mut group = c.benchmark_group("generate_proof");
+        let mut group = c.benchmark_group("prove");
         group.sample_size(20);
-        group.bench_function("generate_proof", |b| {
+        group.bench_function("prove", |b| {
             b.iter_batched(
                 || (pk.clone(), witness.clone()),
                 |(pk, witness)| {
-                    generate_proof(
+                    prove(
                         black_box(&pk),
                         black_box(&witness),
                         black_box(r),
@@ -39,7 +39,7 @@ mod bench {
         group.finish();
     }
 
-    criterion::criterion_group!(benches, bench_generate_proof);
+    criterion::criterion_group!(benches, bench_prove);
 }
 
 #[cfg(not(target_arch = "wasm32"))]

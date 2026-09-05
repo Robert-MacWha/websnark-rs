@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+
+use ark_bn254::Fr;
+use num_bigint::BigInt;
 use rustc_hash::FxHashMap;
+use tracing::instrument;
 
-use crate::circuit::{CircuitError, value::Value};
+use crate::circuit::{CircuitError, Witness, rt_ctx::RTCtx, value::Value};
 
-/// CircomV1-compatible circuit definition
+/// CircomV1-compatible circuit definition.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
@@ -51,11 +56,55 @@ pub struct Function {
 }
 
 impl Circuit {
+    /// Generate the witness for a given circuit and input signals. The `input_signals`
+    /// map should contain the named input values for the circuit.
+    ///
+    /// # Errors
+    /// Returns an error if the circuit or input signals are invalid, or if the
+    /// witness cannot be generated.
+    #[instrument(skip_all)]
+    pub fn witness(&self, input_signals: HashMap<String, Value>) -> Result<Witness, CircuitError> {
+        let mut ctx = RTCtx::new(self)?;
+        ctx.set_signal("one", vec![], 1.into())?;
+
+        for (c, v) in ctx.not_init_signals.clone().iter().enumerate() {
+            if *v == 0 {
+                ctx.trigger_component(c)?;
+            }
+        }
+
+        for (name, values) in input_signals {
+            ctx.current_component = Some("main".to_string());
+            iterate_selector(&mut ctx, &name, values, &mut Vec::new())?;
+        }
+
+        for i in 0..ctx.circuit.n_inputs {
+            let idx = ctx.circuit.input_idx(i)?;
+            if ctx.witness[idx].is_none() {
+                let signal_name = ctx.circuit.signal_name(i)?;
+                return Err(CircuitError::SignalNotAssigned(signal_name));
+            }
+        }
+
+        for i in 0..ctx.witness.len() {
+            if ctx.witness[i].is_none() {
+                let signal_name = ctx.circuit.signal_name(i)?;
+                return Err(CircuitError::SignalNotAssigned(signal_name));
+            }
+        }
+
+        let output = ctx.witness[..ctx.circuit.n_vars]
+            .iter()
+            .map(|v| v.ok_or(CircuitError::SignalNotAssigned("unreachable".to_string())))
+            .collect::<Result<Vec<Fr>, CircuitError>>()?;
+        Ok(Witness::new(output))
+    }
+
     /// Returns the index of the i-th input
     ///
     /// # Errors
     /// Returns an error if the input index is out of bounds
-    pub fn input_idx(&self, i: usize) -> Result<usize, CircuitError> {
+    fn input_idx(&self, i: usize) -> Result<usize, CircuitError> {
         if i >= self.n_inputs {
             return Err(CircuitError::InputIndexOutOfBounds(i, self.n_inputs));
         }
@@ -66,8 +115,62 @@ impl Circuit {
     ///
     /// # Errors
     /// Returns an error if the input index is out of bounds
-    pub fn signal_name(&self, i: usize) -> Result<String, CircuitError> {
+    fn signal_name(&self, i: usize) -> Result<String, CircuitError> {
         let idx = self.input_idx(i)?;
         Ok(self.signals[idx].names.join(","))
+    }
+}
+
+fn iterate_selector(
+    ctx: &mut RTCtx,
+    name: &str,
+    values: Value,
+    sels: &mut Vec<BigInt>,
+) -> Result<(), CircuitError> {
+    match values {
+        Value::Number(_) => {
+            ctx.set_signal(
+                name,
+                sels.iter().map(|s| Value::Number(s.clone())).collect(),
+                values,
+            )?;
+        }
+        Value::Fr(_) => {
+            ctx.set_signal(
+                name,
+                sels.iter().map(|s| Value::Number(s.clone())).collect(),
+                values,
+            )?;
+        }
+        Value::Array(arr) => {
+            for (i, val) in arr.into_iter().enumerate() {
+                sels.push(i.into());
+                iterate_selector(ctx, name, val, sels)?;
+                sels.pop();
+            }
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[tracing_test::traced_test]
+    fn test_witness() {
+        let circuit_data = include_str!("../testdata/withdraw.json");
+        let circuit: Circuit = serde_json::from_str(circuit_data).unwrap();
+
+        let input_signal_data = include_str!("../testdata/withdraw_input_signals.json");
+        let input_signals: HashMap<String, Value> =
+            serde_json::from_str(input_signal_data).unwrap();
+
+        let expected_witness_data = include_str!("../testdata/witness.json");
+        let expected_witness: Witness = serde_json::from_str(expected_witness_data).unwrap();
+
+        let witness = circuit.witness(input_signals).unwrap();
+        assert_eq!(witness, expected_witness);
     }
 }

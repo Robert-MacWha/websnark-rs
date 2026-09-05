@@ -1,12 +1,12 @@
 //! Proof generation and verification logic.
 
 mod fr_snarkjs;
-mod generate_proof;
 #[allow(clippy::module_inception)]
 mod proof;
+mod prove;
 
-pub use generate_proof::{generate_proof, generate_random_proof};
 pub use proof::Proof;
+pub use prove::{prove, prove_random};
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]

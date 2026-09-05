@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize, de::Error, ser::SerializeSeq};
 pub struct Witness(Vec<Fr>);
 
 impl Witness {
-    #[must_use] 
+    #[must_use]
     pub fn new(witness: Vec<Fr>) -> Self {
         Witness(witness)
     }

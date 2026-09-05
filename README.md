@@ -1,7 +1,6 @@
 # websnark-rs
 
-websnark-rs is a Websnark-compatible Rust library for generating and verifying
-zk-SNARK proofs from artifacts produced by the Circom v1 compiler.
+websnark-rs is a Websnark-compatible Rust library for generating and verifying zk-SNARK proofs from artifacts produced by the Circom v1 compiler.
 
 ## Examples
 
@@ -9,9 +8,9 @@ zk-SNARK proofs from artifacts produced by the Circom v1 compiler.
 use std::collections::HashMap;
 use ark_bn254::Fr;
 use ark_ff::AdditiveGroup;
-use websnark_rs::circuit::{generate_witness, Circuit, Value};
-use websnark_rs::proof::generate_proof;
-use websnark_rs::proving_key::{ProvingKey};
+use websnark_rs::circuit::{Circuit, Value};
+use websnark_rs::proof::prove;
+use websnark_rs::{ProvingKey};
 
 let circuit_json = include_str!("src/testdata/withdraw.json");
 let proving_key_json = include_str!("src/testdata/withdraw_proving_key.json");
@@ -21,8 +20,8 @@ let circuit: Circuit = serde_json::from_str(circuit_json).unwrap();
 let pk: ProvingKey = serde_json::from_str(proving_key_json).unwrap();
 let inputs: HashMap<String, Value> = serde_json::from_str(inputs_json).unwrap();
 
-let witness = generate_witness(circuit, inputs).unwrap();
-let (proof, pub_signals) = generate_proof(&pk, &witness, Fr::ZERO, Fr::ZERO).unwrap();
+let witness = circuit.witness(inputs).unwrap();
+let (proof, pub_signals) = prove(&pk, &witness, Fr::ZERO, Fr::ZERO).unwrap();
 ```
 
 ## How it works
