@@ -43,4 +43,4 @@ Compared to snarkjs, websnark-rs is significantly faster for both witness and pr
 ## Wasm support
 websnark-rs can be compiled to WASM for use in web applications. 
 
-The `parallel` feature is supported in WASM using `[wasm-bindgen-rayon](https://github.com/RReverser/wasm-bindgen-rayon)`. When enabled, proof generation will be parallelized across multiple web workers. See the `wasm-bindgen-rayon` documentation for setup details.
+The `parallel` feature is supported in WASM using [`wasm-bindgen-rayon`](https://github.com/RReverser/wasm-bindgen-rayon). When enabled, proof generation will be parallelized across multiple web workers. See the `wasm-bindgen-rayon` documentation for setup details.
