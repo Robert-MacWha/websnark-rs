@@ -5,7 +5,6 @@ edition = "2024"
 description = "Circom v1 transpiler and proof generation library in Rust"
 license = "MIT"
 repository = "https://github.com/Robert-MacWha/websnark-rs"
-readme = "README.md"
 keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 exclude = ["*/testdata/**/*", ".gitignore"]

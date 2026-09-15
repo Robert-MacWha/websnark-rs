@@ -25,7 +25,9 @@
           overlays = [ rust-overlay.overlays.default ];
         };
 
-        rustToolchain = pkgs.rust-bin.stable."1.98.0".default.override {
+        # Rust nightly toolchain required for wasm32-unknown-unknown target.
+        # https://github.com/rust-lang/rust/issues/77839
+        rustToolchain = pkgs.rust-bin.nightly."2026-09-03".default.override {
           extensions = [
             "rust-src"
             "llvm-tools"
@@ -36,7 +38,7 @@
           ];
         };
 
-        rustfmtNightly = pkgs.rust-bin.nightly."2025-11-15".rustfmt;
+        rustfmtNightly = pkgs.rust-bin.nightly."2026-09-03".rustfmt;
       in
       {
         devShells = {
