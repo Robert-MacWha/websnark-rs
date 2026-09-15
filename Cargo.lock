@@ -117,18 +117,18 @@ dependencies = [
 [[package]]
 name = "ark-ec"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "ahash",
  "ark-ff",
- "ark-poly 0.6.0 (git+https://github.com/Robert-MacWha/algebra)",
+ "ark-poly 0.6.0 (git+https://github.com/arkworks-rs/algebra/?rev=4d708c7)",
  "ark-serialize",
  "ark-std",
- "educe",
+ "educe 0.7.6",
  "fnv",
  "hashbrown 0.17.1",
  "itertools 0.14.0",
- "num-bigint",
+ "num-bigint 0.5.1",
  "num-integer",
  "num-traits",
  "rayon",
@@ -138,15 +138,15 @@ dependencies = [
 [[package]]
 name = "ark-ff"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "ark-ff-asm",
  "ark-ff-macros",
  "ark-serialize",
  "ark-std",
  "digest",
- "educe",
- "num-bigint",
+ "educe 0.7.6",
+ "num-bigint 0.5.1",
  "num-traits",
  "rayon",
  "zeroize",
@@ -155,7 +155,7 @@ dependencies = [
 [[package]]
 name = "ark-ff-asm"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "quote",
  "syn 2.0.119",
@@ -164,9 +164,9 @@ dependencies = [
 [[package]]
 name = "ark-ff-macros"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.5.1",
  "num-traits",
  "proc-macro2",
  "quote",
@@ -183,7 +183,7 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "ark-std",
- "educe",
+ "educe 0.6.0",
  "fnv",
  "hashbrown 0.17.1",
  "rayon",
@@ -192,13 +192,13 @@ dependencies = [
 [[package]]
 name = "ark-poly"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "ahash",
  "ark-ff",
  "ark-serialize",
  "ark-std",
- "educe",
+ "educe 0.7.6",
  "fnv",
  "hashbrown 0.17.1",
 ]
@@ -206,12 +206,12 @@ dependencies = [
 [[package]]
 name = "ark-serialize"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "ark-serialize-derive",
  "ark-std",
  "digest",
- "num-bigint",
+ "num-bigint 0.5.1",
  "rayon",
  "serde_with",
 ]
@@ -219,7 +219,7 @@ dependencies = [
 [[package]]
 name = "ark-serialize-derive"
 version = "0.6.0"
-source = "git+https://github.com/Robert-MacWha/algebra#87be115ef32d5aec7d29242bbc1b1ec03ab77242"
+source = "git+https://github.com/arkworks-rs/algebra/?rev=4d708c7#4d708c733d9340dedf3b3a8b41718d3370d8cf46"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -654,6 +654,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "educe"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e451fac8dd8dece16234604bf1efce6e90fddd8ab6ad4d66eec0eca5160959dd"
+dependencies = [
+ "enum-ordinalize",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.5",
 ]
 
 [[package]]
@@ -1150,6 +1162,16 @@ name = "num-bigint"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -2113,7 +2135,7 @@ dependencies = [
  "insta",
  "lalrpop",
  "lalrpop-util",
- "num-bigint",
+ "num-bigint 0.4.8",
  "num-traits",
  "rand 0.10.2",
  "rustc-hash",
