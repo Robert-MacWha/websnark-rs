@@ -2,9 +2,7 @@
   description = "Dev shell";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    oldNixPkgs.url = "github:NixOS/nixpkgs/ae5fe741ba9acade281a9185139e3922811c9696";
-    unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -16,8 +14,6 @@
     {
       self,
       nixpkgs,
-      oldNixPkgs,
-      unstable,
       rust-overlay,
       flake-utils,
     }:
@@ -29,15 +25,7 @@
           overlays = [ rust-overlay.overlays.default ];
         };
 
-        oldPkgs = import oldNixPkgs {
-          inherit system;
-        };
-
-        nodejs14 = oldPkgs.nodejs_14.override {
-          python3 = oldPkgs.python39;
-        };
-
-        rustToolchain = pkgs.rust-bin.nightly."2025-11-15".default.override {
+        rustToolchain = pkgs.rust-bin.stable."1.98.0".default.override {
           extensions = [
             "rust-src"
             "llvm-tools"
@@ -80,14 +68,6 @@
               pkgs.wasm-pack
               pkgs.wasm-bindgen-cli_0_2_108
               pkgs.nodejs
-            ];
-          };
-
-          # The CLI expects nodejs 14. It'll probably work with newer versions, but safer to use the correct version.
-          # Unfortunately it does takea a hot second to build
-          tc = pkgs.mkShell {
-            packages = [
-              nodejs14
             ];
           };
         };
