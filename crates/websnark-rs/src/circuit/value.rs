@@ -7,14 +7,9 @@ use num_traits::ToPrimitive;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
 
-/// Circuit value, representing either a number or an array of values.
-///
-/// Internally the Number and Fr variants are used to more efficiently compute various
-/// operations.
+/// Circuit value, representing either a field element or an array of values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
-    Number(BigInt),
-    #[doc(hidden)]
     Fr(Fr),
     Array(Vec<Value>),
 }
@@ -36,15 +31,6 @@ impl Value {
     pub(crate) fn into_fr(self) -> Result<Fr, ValueError> {
         match self {
             Value::Fr(f) => Ok(f),
-            Value::Number(b) => Ok(bigint_to_fr(&b)),
-            Value::Array(_) => Err(ValueError::ExpectedNumber),
-        }
-    }
-
-    pub(crate) fn into_number(self) -> Result<BigInt, ValueError> {
-        match self {
-            Value::Number(b) => Ok(b),
-            Value::Fr(f) => Ok(fr_to_bigint(f)),
             Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
@@ -54,9 +40,6 @@ impl Value {
             Value::Fr(f) => f.into_bigint().as_ref()[0]
                 .to_u32()
                 .ok_or_else(|| ValueError::InvalidNumber(f.to_string())),
-            Value::Number(n) => n
-                .to_u32()
-                .ok_or_else(|| ValueError::InvalidNumber(n.to_string())),
             Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
@@ -64,7 +47,6 @@ impl Value {
     pub(crate) fn is_zero(&self) -> Result<bool, ValueError> {
         match self {
             Value::Fr(f) => Ok(f == &Fr::ZERO),
-            Value::Number(b) => Ok(b == &BigInt::ZERO),
             Value::Array(_) => Err(ValueError::ExpectedNumber),
         }
     }
@@ -82,12 +64,6 @@ impl From<u64> for Value {
     }
 }
 
-impl From<BigInt> for Value {
-    fn from(value: BigInt) -> Self {
-        Value::Number(value)
-    }
-}
-
 impl From<Fr> for Value {
     fn from(value: Fr) -> Self {
         Value::Fr(value)
@@ -97,7 +73,6 @@ impl From<Fr> for Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Number(n) => write!(f, "{n}"),
             Value::Fr(fr) => write!(f, "{fr}"),
             Value::Array(arr) => {
                 write!(f, "[")?;
@@ -119,7 +94,6 @@ impl Display for Value {
 impl Serialize for Value {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
-            Value::Number(n) => n.to_string().serialize(s),
             Value::Fr(fr) => fr.to_string().serialize(s),
             Value::Array(items) => {
                 let mut seq = s.serialize_seq(Some(items.len()))?;
@@ -152,21 +126,20 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor {
     }
 
     fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
-        Ok(Value::Number(BigInt::from(v)))
+        Ok(Value::Fr(bigint_to_fr(&BigInt::from(v))))
     }
 
     fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
-        Ok(Value::Number(BigInt::from(v)))
+        Ok(Value::Fr(bigint_to_fr(&BigInt::from(v))))
     }
 
     fn visit_u128<E: serde::de::Error>(self, v: u128) -> Result<Self::Value, E> {
-        Ok(Value::Number(BigInt::from(v)))
+        Ok(Value::Fr(bigint_to_fr(&BigInt::from(v))))
     }
 
     fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
-        v.parse::<BigInt>()
-            .map(Value::Number)
-            .map_err(|e| E::custom(e))
+        let n = v.parse::<BigInt>().map_err(|e| E::custom(e))?;
+        Ok(Value::Fr(bigint_to_fr(&n)))
     }
 
     fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
@@ -193,7 +166,7 @@ pub fn bigint_to_fr(n: &BigInt) -> Fr {
     Fr::from_le_bytes_mod_order(&bytes)
 }
 
-fn fr_to_bigint(f: Fr) -> BigInt {
+pub(crate) fn fr_to_bigint(f: Fr) -> BigInt {
     let bytes = f.into_bigint().to_bytes_le();
     BigInt::from_bytes_le(num_bigint::Sign::Plus, &bytes)
 }
@@ -209,12 +182,12 @@ mod tests {
 
     #[test]
     fn test_single_number() {
-        assert!(matches!(de("42"), Value::Number(n) if n == BigInt::from(42)));
+        assert!(matches!(de("42"), Value::Fr(f) if f == bigint_to_fr(&BigInt::from(42))));
     }
 
     #[test]
     fn test_negative_number() {
-        assert!(matches!(de("-7"), Value::Number(n) if n == BigInt::from(-7)));
+        assert!(matches!(de("-7"), Value::Fr(f) if f == bigint_to_fr(&BigInt::from(-7))));
     }
 
     #[test]
@@ -229,7 +202,7 @@ mod tests {
         let Value::Array(items) = v else {
             panic!("expected array")
         };
-        assert!(matches!(&items[0], Value::Number(n) if *n == BigInt::from(1)));
+        assert!(matches!(&items[0], Value::Fr(f) if *f == bigint_to_fr(&BigInt::from(1))));
         assert!(matches!(&items[1], Value::Array(a) if a.len() == 2));
     }
 

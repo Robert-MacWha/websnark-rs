@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use ark_bn254::Fr;
-use num_bigint::BigInt;
 use rustc_hash::FxHashMap;
 use tracing::instrument;
 
@@ -125,26 +124,20 @@ fn iterate_selector(
     ctx: &mut RTCtx,
     name: &str,
     values: Value,
-    sels: &mut Vec<BigInt>,
+    sels: &mut Vec<u32>,
 ) -> Result<(), CircuitError> {
     match values {
-        Value::Number(_) => {
-            ctx.set_signal(
-                name,
-                sels.iter().map(|s| Value::Number(s.clone())).collect(),
-                values,
-            )?;
-        }
         Value::Fr(_) => {
             ctx.set_signal(
                 name,
-                sels.iter().map(|s| Value::Number(s.clone())).collect(),
+                sels.iter().map(|s| Value::from(u64::from(*s))).collect(),
                 values,
             )?;
         }
         Value::Array(arr) => {
             for (i, val) in arr.into_iter().enumerate() {
-                sels.push(i.into());
+                #[allow(clippy::cast_possible_truncation)]
+                sels.push(i as u32);
                 iterate_selector(ctx, name, val, sels)?;
                 sels.pop();
             }

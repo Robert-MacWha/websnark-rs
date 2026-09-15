@@ -1,31 +1,18 @@
 use ark_bn254::Fr;
-use ark_ff::{Field, PrimeField};
-use num_bigint::BigInt;
-use std::sync::OnceLock;
+use ark_ff::{AdditiveGroup, Field};
 
 use crate::{
     circom::ast::{BinOpKind, Expr, Function, Stmt},
-    circuit::{CircuitError, Value, rt_ctx::RTCtx},
+    circuit::{
+        CircuitError, Value,
+        rt_ctx::RTCtx,
+        value::{bigint_to_fr, fr_to_bigint},
+    },
 };
-
-const PRIME: &str = "21888242871839275222246405745257275088548364400416034343698204186575808495617";
-const MASK: &str = "28948022309329048855892746252171976963317496166410141009864396001978282409983";
-
-fn bigint_prime() -> &'static BigInt {
-    static BIGINT_PRIME: OnceLock<BigInt> = OnceLock::new();
-    #[allow(clippy::unwrap_used)]
-    BIGINT_PRIME.get_or_init(|| PRIME.parse().unwrap())
-}
-
-fn bigint_mask() -> &'static BigInt {
-    static BIGINT_MASK: OnceLock<BigInt> = OnceLock::new();
-    #[allow(clippy::unwrap_used)]
-    BIGINT_MASK.get_or_init(|| MASK.parse().unwrap())
-}
 
 /// Executes a function and returns its return value, or zero if it doesn't return anything.
 pub fn execute_function(ctx: &mut RTCtx, func: &Function) -> Result<Value, CircuitError> {
-    Ok(execute_block(ctx, &func.body)?.unwrap_or(Value::Number(BigInt::ZERO)))
+    Ok(execute_block(ctx, &func.body)?.unwrap_or(0u64.into()))
 }
 
 fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, CircuitError> {
@@ -85,8 +72,12 @@ fn execute_stmt(ctx: &mut RTCtx, stmt: &Stmt) -> Result<Option<Value>, CircuitEr
 fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
     match expr {
         Expr::NumberLit(fr) => Ok(Value::Fr(*fr)),
-        Expr::PrimeConst => Ok(bigint_prime().clone().into()),
-        Expr::MaskConst => Ok(bigint_mask().clone().into()),
+        //? p == 0 (mod p), which is correct for Fr-native ops.
+        Expr::PrimeConst => Ok(Value::Fr(Fr::ZERO)),
+        //? MASK > prime, so it can't be represented as an Fr; only valid as And's rhs (below).
+        Expr::MaskConst => Err(CircuitError::RuntimeError(
+            "MaskConst used outside of And".to_string(),
+        )),
         Expr::ArrayLit(arr) => {
             let res = execute_exprs(ctx, arr)?;
             Ok(Value::Array(res))
@@ -133,6 +124,21 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
             let args = execute_exprs(ctx, args)?;
             ctx.call_function(name, &args)
         }
+        //? lhs is already reduced mod p, so this is a no-op (see Inverse/ModPow).
+        Expr::BinOp {
+            op: BinOpKind::Mod,
+            lhs,
+            rhs,
+        } => {
+            debug_assert!(matches!(rhs.as_ref(), Expr::PrimeConst));
+            Ok(execute_expr(ctx, lhs)?.into_fr()?.into())
+        }
+        //? MASK == 2^254 - 1 and every valid Fr value is < prime < 2^254, so this is a no-op.
+        Expr::BinOp {
+            op: BinOpKind::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::MaskConst) => execute_expr(ctx, lhs),
         Expr::BinOp { op, lhs, rhs } => {
             let lhs = execute_expr(ctx, lhs)?;
             let rhs = execute_expr(ctx, rhs)?;
@@ -141,57 +147,44 @@ fn execute_expr(ctx: &mut RTCtx, expr: &Expr) -> Result<Value, CircuitError> {
                 BinOpKind::Add => Ok((lhs.into_fr()? + rhs.into_fr()?).into()),
                 BinOpKind::Sub => Ok((lhs.into_fr()? - rhs.into_fr()?).into()),
                 BinOpKind::Mul => Ok((lhs.into_fr()? * rhs.into_fr()?).into()),
-                BinOpKind::Mod => {
-                    //? Modulo by the prime is a no-op, so we can return lhs directly
-                    if matches!(&lhs, Value::Fr(_))
-                        && let Value::Number(rhs_n) = &rhs
-                        && rhs_n == bigint_prime()
-                    {
-                        return Ok(lhs);
-                    }
-
-                    Ok((lhs.into_number()? % rhs.into_number()?).into())
+                BinOpKind::Mod => unreachable!("handled above"),
+                BinOpKind::Div => {
+                    let lhs = fr_to_bigint(lhs.into_fr()?);
+                    let rhs = fr_to_bigint(rhs.into_fr()?);
+                    Ok(bigint_to_fr(&(lhs / rhs)).into())
                 }
-                BinOpKind::Div => Ok((lhs.into_number()? / rhs.into_number()?).into()),
                 BinOpKind::Eq => Ok((lhs.into_fr()? == rhs.into_fr()?).into()),
                 BinOpKind::Neq => Ok((lhs.into_fr()? != rhs.into_fr()?).into()),
                 BinOpKind::Lt => Ok((lhs.into_fr()? < rhs.into_fr()?).into()),
                 BinOpKind::Gt => Ok((lhs.into_fr()? > rhs.into_fr()?).into()),
-                BinOpKind::And => Ok((lhs.into_number()? & rhs.into_number()?).into()),
+                BinOpKind::And => {
+                    let lhs = fr_to_bigint(lhs.into_fr()?);
+                    let rhs = fr_to_bigint(rhs.into_fr()?);
+                    Ok(bigint_to_fr(&(lhs & rhs)).into())
+                }
                 BinOpKind::Shl => {
-                    let lhs = lhs.into_fr()?.into_bigint();
+                    let lhs = fr_to_bigint(lhs.into_fr()?);
                     let n = rhs.into_u32()?;
-                    Ok(Fr::from(lhs << n).into())
+                    Ok(bigint_to_fr(&(lhs << n)).into())
                 }
                 BinOpKind::Shr => {
-                    let lhs = lhs.into_fr()?.into_bigint();
+                    let lhs = fr_to_bigint(lhs.into_fr()?);
                     let n = rhs.into_u32()?;
-                    Ok(Fr::from(lhs >> n).into())
+                    Ok(bigint_to_fr(&(lhs >> n)).into())
                 }
             }
         }
-        Expr::Inverse(base, _modulos) => {
+        Expr::Inverse(base, modulos) => {
+            debug_assert!(matches!(modulos.as_ref(), Expr::PrimeConst));
             let base = execute_expr(ctx, base)?.into_fr()?;
-            //? Inverse always exists in a field, so we can ignore the module arg.
-            // let modulos = execute_expr(ctx, modulos)?;
-            // let modulos = execute_expr(ctx, modulos)?.into_number()?;
-            // if modulos != *bigint_prime() {
-            //     bail!("modulos must be equal to the prime");
-            // }
-
             base.inverse()
                 .ok_or(CircuitError::InvalidInverse)
                 .map(std::convert::Into::into)
         }
-        Expr::ModPow(base, exp, _modulos) => {
+        Expr::ModPow(base, exp, modulos) => {
+            debug_assert!(matches!(modulos.as_ref(), Expr::PrimeConst));
             let base = execute_expr(ctx, base)?.into_fr()?;
             let exp = execute_expr(ctx, exp)?.into_u32()?;
-            //? ModPow is always used to convert to Montgomery form, so we can ignore the modulos arg.
-            // let modulos = execute_expr(ctx, modulos)?.into_number()?;
-            // if modulos != *bigint_prime() {
-            //     bail!("modulos must be equal to the prime");
-            // }
-
             Ok(base.pow([u64::from(exp)]).into())
         }
         Expr::LogicalOr(lhs, rhs) => {

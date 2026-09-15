@@ -78,6 +78,7 @@ pub fn prove(pk: &ProvingKey, w: &Witness, r: Fr, s: Fr) -> Result<(Proof, Vec<F
 
 // snarkjs/websnark proving keys order polsA/polsB around ω_7 (7^((R-1)/2^28)), not
 // ark-bn254's ω_5 — so the FFT runs over `FrSnarkjs` and we convert at the boundary.
+#[expect(clippy::similar_names)]
 fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
     let m = pk.domain_size;
 

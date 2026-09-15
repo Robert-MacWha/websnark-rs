@@ -1,7 +1,6 @@
 use std::{fmt::Write, rc::Rc};
 
 use ark_bn254::Fr;
-use num_bigint::BigInt;
 use rustc_hash::FxHashMap;
 use tracing::debug;
 
@@ -300,7 +299,7 @@ fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>, CircuitError> {
 fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) {
     let idx = sels[0] as usize;
     while a.len() <= idx {
-        a.push(Value::Number(BigInt::ZERO));
+        a.push(0u64.into());
     }
     if sels.len() == 1 {
         a[idx] = value;
@@ -346,8 +345,8 @@ mod tests {
         serde_json::from_str(data).unwrap()
     }
 
-    fn num(n: i64) -> Value {
-        Value::Number(BigInt::from(n))
+    fn num(n: u64) -> Value {
+        Value::from(n)
     }
 
     #[test]
