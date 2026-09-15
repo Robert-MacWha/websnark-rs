@@ -64,7 +64,7 @@ impl Circuit {
     #[instrument(skip_all)]
     pub fn witness(&self, input_signals: HashMap<String, Value>) -> Result<Witness, CircuitError> {
         let mut ctx = RTCtx::new(self)?;
-        ctx.set_signal("one", vec![], 1.into())?;
+        ctx.set_signal("one", vec![], Fr::from(1u64))?;
 
         for (c, v) in ctx.not_init_signals.clone().iter().enumerate() {
             if *v == 0 {
@@ -127,13 +127,7 @@ fn iterate_selector(
     sels: &mut Vec<u32>,
 ) -> Result<(), CircuitError> {
     match values {
-        Value::Fr(_) => {
-            ctx.set_signal(
-                name,
-                sels.iter().map(|s| Value::from(u64::from(*s))).collect(),
-                values,
-            )?;
-        }
+        Value::Fr(f) => ctx.set_signal(name, sels.clone(), f)?,
         Value::Array(arr) => {
             for (i, val) in arr.into_iter().enumerate() {
                 #[allow(clippy::cast_possible_truncation)]
