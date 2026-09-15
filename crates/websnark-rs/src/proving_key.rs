@@ -42,7 +42,7 @@ pub struct ProvingKey {
     pub pols_b: Vec<HashMap<usize, Fr>>,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "serde"))]
 mod tests {
     use super::*;
 
@@ -55,60 +55,50 @@ mod tests {
 
         for (i, p) in pk.a.iter().enumerate() {
             if !p.is_zero() {
-                assert!(p.is_on_curve(), "A[{}] is not on curve: {:?}", i, p);
+                assert!(p.is_on_curve(), "A[{i}] is not on curve: {p:?}");
                 assert!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
-                    "A[{}] is not in correct subgroup: {:?}",
-                    i,
-                    p
+                    "A[{i}] is not in correct subgroup: {p:?}"
                 );
             }
         }
 
         for (i, p) in pk.b_g1.iter().enumerate() {
             if !p.is_zero() {
-                assert!(p.is_on_curve(), "B_g1[{}] is not on curve: {:?}", i, p);
+                assert!(p.is_on_curve(), "B_g1[{i}] is not on curve: {p:?}");
                 assert!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
-                    "B_g1[{}] is not in correct subgroup: {:?}",
-                    i,
-                    p
+                    "B_g1[{i}] is not in correct subgroup: {p:?}"
                 );
             }
         }
 
         for (i, p) in pk.b_g2.iter().enumerate() {
             if !p.is_zero() {
-                assert!(p.is_on_curve(), "B_g2[{}] is not on curve: {:?}", i, p);
+                assert!(p.is_on_curve(), "B_g2[{i}] is not on curve: {p:?}");
                 assert!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
-                    "B_g2[{}] is not in correct subgroup: {:?}",
-                    i,
-                    p
+                    "B_g2[{i}] is not in correct subgroup: {p:?}"
                 );
             }
         }
 
         for (i, p) in pk.c.iter().enumerate() {
             if !p.is_zero() {
-                assert!(p.is_on_curve(), "C[{}] is not on curve: {:?}", i, p);
+                assert!(p.is_on_curve(), "C[{i}] is not on curve: {p:?}");
                 assert!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
-                    "C[{}] is not in correct subgroup: {:?}",
-                    i,
-                    p
+                    "C[{i}] is not in correct subgroup: {p:?}"
                 );
             }
         }
 
         for (i, p) in pk.h_exps.iter().enumerate() {
             if !p.is_zero() {
-                assert!(p.is_on_curve(), "h_exps[{}] is not on curve: {:?}", i, p);
+                assert!(p.is_on_curve(), "h_exps[{i}] is not on curve: {p:?}");
                 assert!(
                     p.is_in_correct_subgroup_assuming_on_curve(),
-                    "h_exps[{}] is not in correct subgroup: {:?}",
-                    i,
-                    p
+                    "h_exps[{i}] is not in correct subgroup: {p:?}"
                 );
             }
         }

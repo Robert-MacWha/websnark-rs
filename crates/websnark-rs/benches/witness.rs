@@ -23,7 +23,7 @@ mod bench {
                 || input_signals.clone(),
                 |input_signals| circuit.witness(black_box(input_signals)).expect("witness"),
                 criterion::BatchSize::LargeInput,
-            )
+            );
         });
         group.finish();
     }

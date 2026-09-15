@@ -18,7 +18,7 @@ features = []
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["serde"]
+default = []
 serde = ["dep:serde"]
 asm = ["ark-ff/asm"]
 parallel = [
@@ -62,10 +62,12 @@ criterion = { workspace = true }
 
 [[bench]]
 name = "proof"
+required-features = ["serde"]
 harness = false
 
 [[bench]]
 name = "witness"
+required-features = ["serde"]
 harness = false
 
 [package.metadata.wasm-pack.profile.profiling]

@@ -34,7 +34,7 @@ mod bench {
                     .unwrap()
                 },
                 criterion::BatchSize::LargeInput,
-            )
+            );
         });
         group.finish();
     }

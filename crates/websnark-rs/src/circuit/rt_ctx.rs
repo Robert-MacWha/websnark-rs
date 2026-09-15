@@ -316,6 +316,7 @@ fn append_selectors(out: &mut String, selectors: Vec<u32>) -> Result<(), Circuit
 }
 
 #[cfg(test)]
+#[cfg(feature = "serde")]
 mod tests {
     use super::*;
 
@@ -377,7 +378,7 @@ mod tests {
 
         assert_eq!(
             ctx.not_init_signals[0],
-            ctx.circuit.components[0].input_signals as i64
+            i64::try_from(ctx.circuit.components[0].input_signals).unwrap(),
         );
     }
 

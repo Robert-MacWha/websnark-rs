@@ -128,7 +128,7 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
         .collect::<Result<_, ProofError>>()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "serde"))]
 mod tests {
     use std::str::FromStr;
 

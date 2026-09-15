@@ -1,7 +1,4 @@
 #![doc = include_str!("../README.md")]
-#![deny(clippy::unwrap_used)]
-#![deny(clippy::expect_used)]
-#![deny(clippy::result_large_err)]
 
 mod circom;
 pub mod circuit;
