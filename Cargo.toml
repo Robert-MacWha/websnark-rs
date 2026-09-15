@@ -3,7 +3,6 @@ members = ["crates/websnark-rs", "crates/websnark-cli"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.102"
 ark-bn254 = "0.6.0"
 ark-ec = "0.6.0"
 ark-ff = "0.6.0"
