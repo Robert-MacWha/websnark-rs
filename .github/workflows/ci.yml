@@ -23,8 +23,8 @@ jobs:
     - uses: Swatinem/rust-cache@v2
 
     - run: nix develop .#ci --command cargo check --all-features
+    - run: nix develop .#ci --command cargo clippy --all-features -- -D warnings
     - run: nix develop .#ci --command cargo test --release --all-features
-    - run: nix develop .#ci --command cargo bench --all-features
 
   test-wasm:
     runs-on: ubuntu-latest
