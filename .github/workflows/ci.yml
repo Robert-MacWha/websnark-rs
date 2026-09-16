@@ -22,9 +22,9 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
 
-    - run: nix develop .#ci --command cargo check
+    - run: nix develop .#ci --command cargo check --all-features
     - run: nix develop .#ci --command cargo test --release --all-features
-    - run: nix develop .#ci --command cargo bench --features "serde,parallel"
+    - run: nix develop .#ci --command cargo bench --all-features
 
   test-wasm:
     runs-on: ubuntu-latest
@@ -37,5 +37,5 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
 
-    - run: nix develop .#ci --command cargo check --target wasm32-unknown-unknown
-    - run: nix develop .#ci --command cargo bench --target wasm32-unknown-unknown --features "serde"
+    - run: nix develop .#ci --command cargo check --all-features --target wasm32-unknown-unknown
+    - run: nix develop .#ci --command cargo bench --all-features --target wasm32-unknown-unknown

@@ -44,7 +44,6 @@ fn bench_witness(c: &mut Criterion) {
             let mut total = std::time::Duration::ZERO;
 
             for _ in 0..iters {
-                let circuit = circuit.clone();
                 let input = input.clone();
 
                 let start = Instant::now();
