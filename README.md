@@ -30,12 +30,14 @@ Circom V1 produces JSON artifacts for the circuit, proving key, and verification
 
 Compared to snarkjs, websnark-rs is significantly faster for both witness and proof generation. The below benchmarks were run against the tornadocash withdraw circuit on a Ryzen 5 3600 CPU.
 
+## Benchmarks
+
 | library                                        | witness generation | proof generation |
 | ---------------------------------------------- | ------------------ | ---------------- |
-| websnark-rs (native)                           | 110 ms             | 1200 ms          |
-| websnark-rs (native +parallel)                 | 110 ms             | 300 ms           |
-| websnark-rs (wasm32-unknown-unknown)           | 620 ms             | 8000 ms          |
-| websnark-rs (wasm32-unknown-unknown +parallel) | 620 ms             | 1500 ms          |
+| websnark-rs (native)                           | 120 ms             | 1200 ms          |
+| websnark-rs (native +parallel)                 | 120 ms             | 300 ms           |
+| websnark-rs (wasm32-unknown-unknown)           | 180 ms             | 4600 ms          |
+| websnark-rs (wasm32-unknown-unknown +parallel) | 180 ms             | 1500 ms          |
 | snarkjs 0.1.20 (nodejs 14)                     | 620 ms             | 3500 ms          |
 
 ## Features
