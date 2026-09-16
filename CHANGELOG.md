@@ -1,3 +1,8 @@
+## [0.7.0] - 2026-09-16
+
+### 🚀 Features
+
+- Impl Serialize on Circuit
 ## [0.6.0] - 2026-09-16
 
 ### 🚀 Features
