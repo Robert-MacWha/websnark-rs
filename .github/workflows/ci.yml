@@ -37,5 +37,20 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
 
-    - run: nix develop .#ci --command cargo check --all-features --target wasm32-unknown-unknown
-    - run: nix develop .#ci --command cargo bench --all-features --target wasm32-unknown-unknown
+    - run: nix develop .#ci --command cargo check --target wasm32-unknown-unknown --all-features
+    - run: nix develop .#ci --command cargo test --target wasm32-unknown-unknown --release --all-features
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v31
+    - uses: nix-community/cache-nix-action@v7
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+
+    - uses: Swatinem/rust-cache@v2
+
+    - run: nix develop .#ci --command cargo bench --features "serde"
+    - run: nix develop .#ci --command cargo bench --features "serde,parallel"
+    - run: nix develop .#ci --command cargo bench --target wasm32-unknown-unknown --features "serde"
