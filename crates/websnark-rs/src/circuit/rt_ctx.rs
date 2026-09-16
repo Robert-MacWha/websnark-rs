@@ -1,7 +1,6 @@
 use std::{fmt::Write, rc::Rc};
 
 use ark_bn254::Fr;
-use num_bigint::BigInt;
 use rustc_hash::FxHashMap;
 use tracing::debug;
 
@@ -80,35 +79,26 @@ impl<'a> RTCtx<'a> {
     pub fn set_signal(
         &mut self,
         name: &str,
-        selectors: Vec<Value>,
-        value: Value,
+        selectors: Vec<u32>,
+        value: Fr,
     ) -> Result<(), CircuitError> {
-        let selectors = into_numbers(selectors)?;
-        let value = value.into_fr()?;
-
         let full = self.build_signal_name(name, selectors)?;
         self.set_signal_full(&full, value)
     }
 
-    pub fn get_signal(&self, name: &str, selectors: Vec<Value>) -> Result<Value, CircuitError> {
-        let selectors = into_numbers(selectors)?;
-
+    pub fn get_signal(&self, name: &str, selectors: Vec<u32>) -> Result<Fr, CircuitError> {
         let full = self.build_signal_name(name, selectors)?;
-        self.get_signal_full(&full).map(Into::into)
+        self.get_signal_full(&full)
     }
 
     pub fn set_pin(
         &mut self,
         component_name: &str,
-        component_sels: Vec<Value>,
+        component_sels: Vec<u32>,
         signal_name: &str,
-        signal_sels: Vec<Value>,
-        value: Value,
+        signal_sels: Vec<u32>,
+        value: Fr,
     ) -> Result<(), CircuitError> {
-        let component_sels = into_numbers(component_sels)?;
-        let signal_sels = into_numbers(signal_sels)?;
-        let value = value.into_fr()?;
-
         let full = self.build_pin_name(component_name, component_sels, signal_name, signal_sels)?;
         self.set_signal_full(&full, value)
     }
@@ -116,24 +106,20 @@ impl<'a> RTCtx<'a> {
     pub fn get_pin(
         &self,
         component_name: &str,
-        component_sels: Vec<Value>,
+        component_sels: Vec<u32>,
         signal_name: &str,
-        signal_sels: Vec<Value>,
-    ) -> Result<Value, CircuitError> {
-        let component_sels = into_numbers(component_sels)?;
-        let signal_sels = into_numbers(signal_sels)?;
-
+        signal_sels: Vec<u32>,
+    ) -> Result<Fr, CircuitError> {
         let full = self.build_pin_name(component_name, component_sels, signal_name, signal_sels)?;
-        self.get_signal_full(&full).map(Into::into)
+        self.get_signal_full(&full)
     }
 
     pub fn set_var(
         &mut self,
         name: &str,
-        selectors: Vec<Value>,
+        selectors: &[u32],
         value: Value,
     ) -> Result<Value, CircuitError> {
-        let selectors = into_numbers(selectors)?;
         let scope = self
             .scopes
             .last_mut()
@@ -152,15 +138,14 @@ impl<'a> RTCtx<'a> {
                 "Variable is not an array: {name}"
             )));
         };
-        set_var_array(arr, &selectors, value.clone());
+        set_var_array(arr, selectors, value.clone());
         Ok(value)
     }
 
-    pub fn get_var(&self, name: &str, selectors: Vec<Value>) -> Result<Value, CircuitError> {
-        let selectors = into_numbers(selectors)?;
+    pub fn get_var(&self, name: &str, selectors: &[u32]) -> Result<Value, CircuitError> {
         for scope in self.scopes.iter().rev() {
             if let Some(v) = scope.get(name) {
-                return select(v, &selectors).cloned();
+                return select(v, selectors).cloned();
             }
         }
         Err(CircuitError::RuntimeError(format!(
@@ -290,17 +275,10 @@ impl<'a> RTCtx<'a> {
     }
 }
 
-fn into_numbers(vals: Vec<Value>) -> Result<Vec<u32>, CircuitError> {
-    Ok(vals
-        .into_iter()
-        .map(super::value::Value::into_u32)
-        .collect::<Result<Vec<_>, ValueError>>()?)
-}
-
 fn set_var_array(a: &mut Vec<Value>, sels: &[u32], value: Value) {
     let idx = sels[0] as usize;
     while a.len() <= idx {
-        a.push(Value::Number(BigInt::ZERO));
+        a.push(0u64.into());
     }
     if sels.len() == 1 {
         a[idx] = value;
@@ -338,6 +316,7 @@ fn append_selectors(out: &mut String, selectors: Vec<u32>) -> Result<(), Circuit
 }
 
 #[cfg(test)]
+#[cfg(feature = "serde")]
 mod tests {
     use super::*;
 
@@ -346,8 +325,8 @@ mod tests {
         serde_json::from_str(data).unwrap()
     }
 
-    fn num(n: i64) -> Value {
-        Value::Number(BigInt::from(n))
+    fn num(n: u64) -> Value {
+        Value::from(n)
     }
 
     #[test]
@@ -388,11 +367,8 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_signal("one", vec![], 1.into()).unwrap();
-        assert_eq!(
-            ctx.get_signal("one", vec![]).unwrap().into_u32().unwrap(),
-            1
-        );
+        ctx.set_signal("one", vec![], Fr::from(1u64)).unwrap();
+        assert_eq!(ctx.get_signal("one", vec![]).unwrap(), Fr::from(1u64));
     }
 
     #[test]
@@ -402,7 +378,7 @@ mod tests {
 
         assert_eq!(
             ctx.not_init_signals[0],
-            ctx.circuit.components[0].input_signals as i64
+            i64::try_from(ctx.circuit.components[0].input_signals).unwrap(),
         );
     }
 
@@ -411,8 +387,8 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_var("x", vec![], num(42)).unwrap();
-        assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(42));
+        ctx.set_var("x", &[], num(42)).unwrap();
+        assert_eq!(ctx.get_var("x", &[]).unwrap(), num(42));
     }
 
     #[test]
@@ -420,10 +396,10 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_var("x", vec![num(2)], num(7)).unwrap();
-        assert_eq!(ctx.get_var("x", vec![num(2)]).unwrap(), num(7));
-        assert_eq!(ctx.get_var("x", vec![num(0)]).unwrap(), num(0));
-        assert_eq!(ctx.get_var("x", vec![num(1)]).unwrap(), num(0));
+        ctx.set_var("x", &[2], num(7)).unwrap();
+        assert_eq!(ctx.get_var("x", &[2]).unwrap(), num(7));
+        assert_eq!(ctx.get_var("x", &[0]).unwrap(), num(0));
+        assert_eq!(ctx.get_var("x", &[1]).unwrap(), num(0));
     }
 
     #[test]
@@ -431,10 +407,10 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_var("x", vec![num(1), num(2)], num(9)).unwrap();
-        assert_eq!(ctx.get_var("x", vec![num(1), num(2)]).unwrap(), num(9));
+        ctx.set_var("x", &[1, 2], num(9)).unwrap();
+        assert_eq!(ctx.get_var("x", &[1, 2]).unwrap(), num(9));
         assert_eq!(
-            ctx.get_var("x", vec![]).unwrap(),
+            ctx.get_var("x", &[]).unwrap(),
             Value::Array(vec![num(0), Value::Array(vec![num(0), num(0), num(9)]),])
         );
     }
@@ -444,9 +420,9 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_var("x", vec![], num(5)).unwrap();
+        ctx.set_var("x", &[], num(5)).unwrap();
         ctx.scopes.push(FxHashMap::default());
-        assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(5));
+        assert_eq!(ctx.get_var("x", &[]).unwrap(), num(5));
     }
 
     #[test]
@@ -454,12 +430,12 @@ mod tests {
         let c = circuit();
         let mut ctx = RTCtx::new(&c).unwrap();
 
-        ctx.set_var("x", vec![], num(5)).unwrap();
+        ctx.set_var("x", &[], num(5)).unwrap();
         ctx.scopes.push(FxHashMap::default());
-        ctx.set_var("x", vec![], num(10)).unwrap();
-        assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(10));
+        ctx.set_var("x", &[], num(10)).unwrap();
+        assert_eq!(ctx.get_var("x", &[]).unwrap(), num(10));
         ctx.scopes.pop();
-        assert_eq!(ctx.get_var("x", vec![]).unwrap(), num(5));
+        assert_eq!(ctx.get_var("x", &[]).unwrap(), num(5));
     }
 
     #[test]
@@ -467,6 +443,6 @@ mod tests {
         let c = circuit();
         let ctx = RTCtx::new(&c).unwrap();
 
-        assert!(ctx.get_var("nope", vec![]).is_err());
+        assert!(ctx.get_var("nope", &[]).is_err());
     }
 }

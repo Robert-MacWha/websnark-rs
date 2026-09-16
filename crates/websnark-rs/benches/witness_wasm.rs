@@ -1,4 +1,4 @@
-#![cfg(target_arch = "wasm32")]
+#![cfg(all(target_arch = "wasm32", feature = "serde"))]
 
 // NOTE: run_in_browser is not an accurate benchmark for in-browser performance. For whatever reason this
 // reports much higher times than running the same code in-browser with wasm-pack. Use this as a rough
@@ -44,7 +44,6 @@ fn bench_witness(c: &mut Criterion) {
             let mut total = std::time::Duration::ZERO;
 
             for _ in 0..iters {
-                let circuit = circuit.clone();
                 let input = input.clone();
 
                 let start = Instant::now();

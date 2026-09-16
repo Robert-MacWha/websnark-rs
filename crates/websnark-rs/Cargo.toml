@@ -5,7 +5,6 @@ edition = "2024"
 description = "Circom v1 transpiler and proof generation library in Rust"
 license = "MIT"
 repository = "https://github.com/Robert-MacWha/websnark-rs"
-readme = "README.md"
 keywords = ["snarkjs", "circom", "zk-snark", "websnark"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 exclude = ["*/testdata/**/*", ".gitignore"]
@@ -18,7 +17,7 @@ features = []
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["serde"]
+default = []
 serde = ["dep:serde"]
 asm = ["ark-ff/asm"]
 parallel = [
@@ -46,7 +45,6 @@ tracing = { workspace = true }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true }
 wasm-bindgen-rayon = { workspace = true, optional = true }
-wasm-bindgen-test = { workspace = true }
 getrandom = { workspace = true, features = ["wasm_js"] }
 
 [build-dependencies]
@@ -60,12 +58,17 @@ tracing-test = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { workspace = true }
 
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
+
 [[bench]]
 name = "proof"
+required-features = ["serde"]
 harness = false
 
 [[bench]]
 name = "witness"
+required-features = ["serde"]
 harness = false
 
 [package.metadata.wasm-pack.profile.profiling]

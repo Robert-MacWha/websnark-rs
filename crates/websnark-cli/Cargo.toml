@@ -8,6 +8,6 @@ publish = false
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
-websnark-rs = { workspace = true }
+websnark-rs = { workspace = true, features = ["serde"] }
 serde_json = { workspace = true }
 postcard = { workspace = true, features = ["use-std"] }

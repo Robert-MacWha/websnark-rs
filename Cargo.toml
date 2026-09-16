@@ -3,7 +3,6 @@ members = ["crates/websnark-rs", "crates/websnark-cli"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.102"
 ark-bn254 = "0.6.0"
 ark-ec = "0.6.0"
 ark-ff = "0.6.0"
@@ -34,6 +33,6 @@ getrandom = "0.4"
 opt-level = 1
 
 [patch.crates-io]
-ark-ec = { git = "https://github.com/Robert-MacWha/algebra" }        # Fix https://github.com/arkworks-rs/algebra/issues/1111
-ark-ff = { git = "https://github.com/Robert-MacWha/algebra" }
-ark-serialize = { git = "https://github.com/Robert-MacWha/algebra" }
+ark-ec = { git = "https://github.com/arkworks-rs/algebra/", rev = "4d708c7" }        # Fix https://github.com/arkworks-rs/algebra/issues/1111
+ark-ff = { git = "https://github.com/arkworks-rs/algebra/", rev = "4d708c7" }
+ark-serialize = { git = "https://github.com/arkworks-rs/algebra/", rev = "4d708c7" }

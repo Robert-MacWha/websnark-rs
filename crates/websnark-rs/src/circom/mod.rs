@@ -22,12 +22,15 @@ pub fn parse_function(input: &str) -> Result<ast::Function, ParseError> {
     // snarkjs (`@tornado/snarkjs/src/circuit.js`) emits `return foo();;` with a
     // double semicolon after returns.
     let input = input.replace(";;", ";");
-    grammer::FunctionParser::new()
-        .parse(&input)
-        .map_err(|e| ParseError(e.map_token(|t| t.to_string()).map_error(std::string::ToString::to_string)))
+    grammer::FunctionParser::new().parse(&input).map_err(|e| {
+        ParseError(
+            e.map_token(|t| t.to_string())
+                .map_error(std::string::ToString::to_string),
+        )
+    })
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "serde"))]
 mod tests {
     use super::*;
 
@@ -40,7 +43,7 @@ mod tests {
         for (name, src) in templates {
             let src = src.as_str().expect("template source is string");
             if let Err(e) = parse_function(src) {
-                panic!("template {}: {}", name, e);
+                panic!("template {name}: {e}");
             }
         }
 
@@ -48,7 +51,7 @@ mod tests {
         for (name, def) in functions {
             let src = def["func"].as_str().expect("function source is string");
             if let Err(e) = parse_function(src) {
-                panic!("function {}: {}", name, e);
+                panic!("function {name}: {e}");
             }
         }
     }
