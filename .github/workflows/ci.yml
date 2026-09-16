@@ -23,7 +23,7 @@ jobs:
     - uses: Swatinem/rust-cache@v2
 
     - run: nix develop .#ci --command cargo check
-    - run: nix develop .#ci --command cargo test
+    - run: nix develop .#ci --command cargo test --release --all-features
     - run: nix develop .#ci --command cargo bench --features "serde,parallel"
 
   test-wasm:
