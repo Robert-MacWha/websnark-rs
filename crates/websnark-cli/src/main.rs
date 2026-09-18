@@ -1,7 +1,7 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use clap::{Parser, Subcommand};
-use websnark_rs::{proving_key::ProvingKey, verifying_key::VerifyingKey};
+use websnark_rs::{circuit::Circuit, proving_key::ProvingKey, verifying_key::VerifyingKey};
 
 #[derive(Parser)]
 struct Cli {
@@ -12,19 +12,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Convert a proving key from snarkjs JSON to binary format
-    ConvertProvingKey {
-        #[arg(short, long)]
-        input: String,
-        #[arg(short, long)]
-        output: String,
-    },
+    ConvertProvingKey { input: PathBuf, output: PathBuf },
     /// Convert a verifying key from snarkjs JSON to binary format
-    ConvertVerifyingKey {
-        #[arg(short, long)]
-        input: String,
-        #[arg(short, long)]
-        output: String,
-    },
+    ConvertVerifyingKey { input: PathBuf, output: PathBuf },
+    /// Convert a circuit from snarkjs JSON to binary format
+    ConvertCircuit { input: PathBuf, output: PathBuf },
 }
 
 fn main() {
@@ -55,6 +47,13 @@ fn main() {
             let verifying_key_bytes =
                 postcard::to_stdvec(&verifying_key).expect("Failed to serialize verifying key");
             fs::write(&output, &verifying_key_bytes).expect("Failed to write verifying key");
+        }
+        Commands::ConvertCircuit { input, output } => {
+            let circuit_json = fs::read_to_string(&input).expect("Failed to read circuit");
+            let circuit: Circuit =
+                serde_json::from_str(&circuit_json).expect("Failed to parse circuit");
+            let circuit_bytes = postcard::to_stdvec(&circuit).expect("Failed to serialize circuit");
+            fs::write(&output, &circuit_bytes).expect("Failed to write circuit");
         }
     }
 }
