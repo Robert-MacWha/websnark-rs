@@ -2166,7 +2166,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-cli"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "clap",
  "postcard",
@@ -2176,7 +2176,7 @@ dependencies = [
 
 [[package]]
 name = "websnark-rs"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "ark-bn254",
  "ark-ec",

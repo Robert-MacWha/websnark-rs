@@ -1,3 +1,8 @@
+## [0.8.0] - 2026-09-18
+
+### 🚀 Features
+
+- Refactor serialization (#8)
 ## [0.7.0] - 2026-09-16
 
 ### 🚀 Features
