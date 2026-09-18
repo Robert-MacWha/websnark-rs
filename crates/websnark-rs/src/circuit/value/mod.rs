@@ -9,6 +9,9 @@ use num_traits::ToPrimitive;
 mod serde;
 
 /// Circuit value, representing either a field element or an array of values.
+///
+/// Supports deserialization from untagged JSON (numbers, decimal strings, or arrays)
+/// to retain compatibility with snarkjs circuit artifacts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Fr(Fr),
@@ -40,6 +43,18 @@ impl Value {
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
         Value::Fr(Fr::from(u64::from(value)))
+    }
+}
+
+impl From<u32> for Value {
+    fn from(value: u32) -> Self {
+        Value::Fr(Fr::from(value))
+    }
+}
+
+impl From<i32> for Value {
+    fn from(value: i32) -> Self {
+        Value::Fr(Fr::from(value))
     }
 }
 

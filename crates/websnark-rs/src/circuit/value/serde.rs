@@ -3,13 +3,26 @@ use num_bigint::BigInt;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeSeq};
 
 use crate::circuit::{Value, value::bigint_to_fr};
+use crate::serde::FieldElement;
+
+/// Shadow of [`Value`] so `#[derive]` can generate a tagged binary encoding; `Value` can't derive
+/// directly since its human-readable format is hand-written below (untagged, no `#[derive]` for that).
+#[serde_with::serde_as]
+#[derive(Serialize, Deserialize)]
+#[serde(remote = "Value")]
+enum BinaryValue {
+    Fr(#[serde_as(as = "FieldElement")] Fr),
+    Array(Vec<Value>),
+}
 
 struct ValueVisitor;
 
-/// Serialize in the snarkjs decimal-string JSON format so that
-/// `serde_json::to_string(&value)` produces human-readable output.
 impl Serialize for Value {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        if !s.is_human_readable() {
+            return BinaryValue::serialize(self, s);
+        }
+
         match self {
             Value::Fr(fr) => fr.to_string().serialize(s),
             Value::Array(items) => {
@@ -23,9 +36,12 @@ impl Serialize for Value {
     }
 }
 
-/// Deserialize from the snarkjs JSON format (number, decimal string, or array).
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        if !d.is_human_readable() {
+            return BinaryValue::deserialize(d);
+        }
+
         d.deserialize_any(ValueVisitor)
     }
 }
@@ -70,7 +86,6 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
 
     fn de(s: &str) -> Value {
         serde_json::from_str(s).expect("deserialization failed")
@@ -78,34 +93,41 @@ mod tests {
 
     #[test]
     fn test_single_number() {
-        assert!(matches!(de("42"), Value::Fr(f) if f == bigint_to_fr(&BigInt::from(42))));
+        let v = de("42");
+        assert_eq!(v, Value::from(42));
     }
 
     #[test]
     fn test_negative_number() {
-        assert!(matches!(de("-7"), Value::Fr(f) if f == bigint_to_fr(&BigInt::from(-7))));
+        let v = de("-7");
+        assert_eq!(v, Value::from(-7));
     }
 
     #[test]
     fn test_flat_array() {
         let v = de("[1, 2, 3]");
-        assert!(matches!(v, Value::Array(ref a) if a.len() == 3));
+        assert_eq!(
+            v,
+            Value::Array(vec![Value::from(1), Value::from(2), Value::from(3),])
+        );
     }
 
     #[test]
     fn test_mixed_nesting() {
         let v = de("[1, [2, 3]]");
-        let Value::Array(items) = v else {
-            panic!("expected array")
-        };
-        assert!(matches!(&items[0], Value::Fr(f) if *f == bigint_to_fr(&BigInt::from(1))));
-        assert!(matches!(&items[1], Value::Array(a) if a.len() == 2));
+        assert_eq!(
+            v,
+            Value::Array(vec![
+                Value::from(1),
+                Value::Array(vec![Value::from(2), Value::from(3)]),
+            ])
+        )
     }
 
     #[test]
     fn test_empty_array() {
         let v = de("[]");
-        assert!(matches!(v, Value::Array(a) if a.is_empty()));
+        assert_eq!(v, Value::Array(vec![]));
     }
 
     #[test]
@@ -113,5 +135,28 @@ mod tests {
         assert!(serde_json::from_str::<Value>("\"not a number\"").is_err());
         assert!(serde_json::from_str::<Value>("true").is_err());
         assert!(serde_json::from_str::<Value>("null").is_err());
+    }
+
+    #[test]
+    fn test_postcard_scalar() {
+        let v = Value::Fr(bigint_to_fr(&BigInt::from(42)));
+
+        let bytes = postcard::to_stdvec(&v).expect("serialization failed");
+        let back: Value = postcard::from_bytes(&bytes).expect("deserialization failed");
+
+        assert_eq!(back, v);
+    }
+
+    #[test]
+    fn test_postcard_nested_array() {
+        let v = Value::Array(vec![
+            Value::from(1),
+            Value::Array(vec![Value::from(2), Value::from(3)]),
+        ]);
+
+        let bytes = postcard::to_stdvec(&v).expect("serialization failed");
+        let back: Value = postcard::from_bytes(&bytes).expect("deserialization failed");
+
+        assert_eq!(back, v);
     }
 }

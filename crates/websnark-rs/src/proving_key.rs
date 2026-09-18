@@ -1,44 +1,53 @@
 use std::collections::HashMap;
 
 #[cfg(feature = "serde")]
-use crate::serde::{fr_map_vec_serde, g1_serde, g1_vec_serde, g2_serde, g2_vec_serde};
+use crate::serde::{FieldElement, G1, G2};
 use ark_bn254::{Fr, G1Affine, G2Affine};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// CircomV1-compatible proving key
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_with::serde_as)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ProvingKey {
-    #[cfg_attr(feature = "serde", serde(rename = "A", with = "g1_vec_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "A"), serde_as(as = "Vec<G1>"))]
     pub a: Vec<G1Affine>,
-    #[cfg_attr(feature = "serde", serde(rename = "B1", with = "g1_vec_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "B1"), serde_as(as = "Vec<G1>"))]
     pub b_g1: Vec<G1Affine>,
-    #[cfg_attr(feature = "serde", serde(rename = "B2", with = "g2_vec_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "B2"), serde_as(as = "Vec<G2>"))]
     pub b_g2: Vec<G2Affine>,
-    #[cfg_attr(feature = "serde", serde(rename = "C", with = "g1_vec_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "C"), serde_as(as = "Vec<G1>"))]
     pub c: Vec<G1Affine>,
     #[cfg_attr(feature = "serde", serde(rename = "nVars"))]
     pub n_vars: usize,
     #[cfg_attr(feature = "serde", serde(rename = "nPublic"))]
     pub n_public: usize,
-    #[cfg_attr(feature = "serde", serde(rename = "vk_alfa_1", with = "g1_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_alfa_1"), serde_as(as = "G1"))]
     pub vk_alpha_g1: G1Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_1", with = "g1_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_1"), serde_as(as = "G1"))]
     pub vk_beta_g1: G1Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_2", with = "g2_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_beta_2"), serde_as(as = "G2"))]
     pub vk_beta_g2: G2Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_1", with = "g1_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_1"), serde_as(as = "G1"))]
     pub vk_delta_g1: G1Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_2", with = "g2_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "vk_delta_2"), serde_as(as = "G2"))]
     pub vk_delta_g2: G2Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "hExps", with = "g1_vec_serde"))]
+    #[cfg_attr(feature = "serde", serde(rename = "hExps"), serde_as(as = "Vec<G1>"))]
     pub h_exps: Vec<G1Affine>,
     #[cfg_attr(feature = "serde", serde(rename = "domainSize"))]
     pub domain_size: usize,
-    #[cfg_attr(feature = "serde", serde(rename = "polsA", with = "fr_map_vec_serde"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "polsA"),
+        serde_as(as = "Vec<HashMap<_, FieldElement>>")
+    )]
     pub pols_a: Vec<HashMap<usize, Fr>>,
-    #[cfg_attr(feature = "serde", serde(rename = "polsB", with = "fr_map_vec_serde"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "polsB"),
+        serde_as(as = "Vec<HashMap<_, FieldElement>>")
+    )]
     pub pols_b: Vec<HashMap<usize, Fr>>,
 }
 
@@ -132,5 +141,16 @@ mod tests {
             pk.vk_delta_g2.is_in_correct_subgroup_assuming_on_curve(),
             "vk_delta_g2 is not in correct subgroup"
         );
+    }
+
+    #[test]
+    fn pkey_postcard_roundtrip() {
+        let pk_data = include_str!("./testdata/withdraw_proving_key.json");
+        let pk: ProvingKey = serde_json::from_str(pk_data).unwrap();
+
+        let bytes = postcard::to_stdvec(&pk).unwrap();
+        let roundtripped: ProvingKey = postcard::from_bytes(&bytes).unwrap();
+
+        assert_eq!(pk, roundtripped);
     }
 }
