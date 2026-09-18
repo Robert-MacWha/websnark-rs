@@ -316,7 +316,6 @@ fn append_selectors(out: &mut String, selectors: Vec<u32>) -> Result<(), Circuit
 }
 
 #[cfg(test)]
-#[cfg(feature = "serde")]
 mod tests {
     use super::*;
 

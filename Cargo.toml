@@ -4,7 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 ark-bn254 = "0.6.0"
-cfg_eval = "0.1.2"
 ark-ec = "0.6.0"
 ark-ff = "0.6.0"
 ark-poly = "0.6.0"

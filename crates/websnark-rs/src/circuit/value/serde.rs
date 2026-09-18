@@ -121,7 +121,7 @@ mod tests {
                 Value::from(1),
                 Value::Array(vec![Value::from(2), Value::from(3)]),
             ])
-        )
+        );
     }
 
     #[test]

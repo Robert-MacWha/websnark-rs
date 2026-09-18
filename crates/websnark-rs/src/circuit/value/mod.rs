@@ -5,7 +5,6 @@ use ark_ff::{BigInteger, PrimeField};
 use num_bigint::BigInt;
 use num_traits::ToPrimitive;
 
-#[cfg(feature = "serde")]
 mod serde;
 
 /// Circuit value, representing either a field element or an array of values.

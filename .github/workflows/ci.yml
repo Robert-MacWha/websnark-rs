@@ -51,6 +51,6 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
 
-    - run: nix develop .#ci --command cargo bench --features "serde"
-    - run: nix develop .#ci --command cargo bench --features "serde,parallel"
-    - run: nix develop .#ci --command cargo bench --target wasm32-unknown-unknown --features "serde"
+    - run: nix develop .#ci --command cargo bench
+    - run: nix develop .#ci --command cargo bench --features "parallel"
+    - run: nix develop .#ci --command cargo bench --target wasm32-unknown-unknown

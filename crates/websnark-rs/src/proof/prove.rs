@@ -11,8 +11,7 @@ use crate::{
     proving_key::ProvingKey,
 };
 
-/// Generate a zk-SNARK groth16 proof for a given proving key and witness, using
-/// random scalars `r` and `s`.
+/// Generate a zk-SNARK groth16 proof for a given proving key and witness.
 ///
 /// # Errors
 /// Returns an error if the witness is invalid, or the proof cannot be generated.
@@ -128,7 +127,7 @@ fn calculate_h(pk: &ProvingKey, w: &[Fr]) -> Result<Vec<Fr>, ProofError> {
         .collect::<Result<_, ProofError>>()
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(test)]
 mod tests {
     use std::str::FromStr;
 

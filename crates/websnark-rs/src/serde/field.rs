@@ -4,7 +4,7 @@ use ark_ff::{BigInt, PrimeField};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 
-/// Serde adapter for PrimeField trait.
+/// Serde adapter for the `PrimeField` trait.
 pub struct FieldElement;
 
 impl<F: PrimeField<BigInt = BigInt<4>>> SerializeAs<F> for FieldElement {

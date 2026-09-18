@@ -7,9 +7,8 @@ use tracing::instrument;
 use crate::circuit::{CircuitError, Witness, rt_ctx::RTCtx, value::Value};
 
 /// CircomV1-compatible circuit definition.
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Circuit {
     pub n_pub_inputs: usize,
     pub n_prv_inputs: usize,
@@ -29,26 +28,23 @@ pub struct Circuit {
     pub functions: FxHashMap<String, Function>,
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Signal {
     pub names: Vec<String>,
-    #[cfg_attr(feature = "serde", serde(rename = "triggerComponents"))]
+    #[serde(rename = "triggerComponents")]
     pub trigger_components: Vec<usize>,
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Component {
     pub name: String,
     pub template: String,
     pub params: FxHashMap<String, Value>,
-    #[cfg_attr(feature = "serde", serde(rename = "inputSignals"))]
+    #[serde(rename = "inputSignals")]
     pub input_signals: usize,
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Function {
     pub params: Vec<String>,
     pub func: String,
@@ -140,7 +136,7 @@ fn iterate_selector(
     Ok(())
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

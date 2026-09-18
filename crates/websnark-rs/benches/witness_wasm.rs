@@ -1,4 +1,4 @@
-#![cfg(all(target_arch = "wasm32", feature = "serde"))]
+#![cfg(target_arch = "wasm32")]
 
 // NOTE: run_in_browser is not an accurate benchmark for in-browser performance. For whatever reason this
 // reports much higher times than running the same code in-browser with wasm-pack. Use this as a rough

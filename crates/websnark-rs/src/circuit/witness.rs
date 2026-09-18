@@ -1,13 +1,11 @@
 use std::ops::Deref;
 
 use ark_bn254::Fr;
-#[cfg(feature = "serde")]
 use crate::serde::FieldElement;
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_with::serde_as)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Witness(#[cfg_attr(feature = "serde", serde_as(as = "Vec<FieldElement>"))] Vec<Fr>);
+#[serde_with::serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Witness(#[serde_as(as = "Vec<FieldElement>")] Vec<Fr>);
 
 impl Witness {
     #[must_use]
@@ -24,7 +22,7 @@ impl Deref for Witness {
     }
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -30,7 +30,7 @@ pub fn parse_function(input: &str) -> Result<ast::Function, ParseError> {
     })
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

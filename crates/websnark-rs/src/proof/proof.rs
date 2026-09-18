@@ -1,23 +1,23 @@
 use ark_bn254::{G1Affine, G2Affine};
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
 use crate::serde::{G1, G2};
 
 /// CircomV1-compatible zk-SNARK proof
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_with::serde_as)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[serde_with::serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Proof {
-    #[cfg_attr(feature = "serde", serde(rename = "pi_a"), serde_as(as = "G1"))]
+    #[serde(rename = "pi_a")]
+    #[serde_as(as = "G1")]
     pub a: G1Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "pi_b"), serde_as(as = "G2"))]
+    #[serde(rename = "pi_b")]
+    #[serde_as(as = "G2")]
     pub b: G2Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "pi_c"), serde_as(as = "G1"))]
+    #[serde(rename = "pi_c")]
+    #[serde_as(as = "G1")]
     pub c: G1Affine,
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 
