@@ -56,92 +56,10 @@ pub struct ProvingKey {
 mod tests {
     use super::*;
 
-    use ark_ec::AffineRepr;
-
     #[test]
     fn pkey_roundtrip() {
         let pk_data = include_str!("./testdata/withdraw_proving_key.json");
-        let pk: ProvingKey = serde_json::from_str(pk_data).unwrap();
-
-        for (i, p) in pk.a.iter().enumerate() {
-            if !p.is_zero() {
-                assert!(p.is_on_curve(), "A[{i}] is not on curve: {p:?}");
-                assert!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    "A[{i}] is not in correct subgroup: {p:?}"
-                );
-            }
-        }
-
-        for (i, p) in pk.b_g1.iter().enumerate() {
-            if !p.is_zero() {
-                assert!(p.is_on_curve(), "B_g1[{i}] is not on curve: {p:?}");
-                assert!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    "B_g1[{i}] is not in correct subgroup: {p:?}"
-                );
-            }
-        }
-
-        for (i, p) in pk.b_g2.iter().enumerate() {
-            if !p.is_zero() {
-                assert!(p.is_on_curve(), "B_g2[{i}] is not on curve: {p:?}");
-                assert!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    "B_g2[{i}] is not in correct subgroup: {p:?}"
-                );
-            }
-        }
-
-        for (i, p) in pk.c.iter().enumerate() {
-            if !p.is_zero() {
-                assert!(p.is_on_curve(), "C[{i}] is not on curve: {p:?}");
-                assert!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    "C[{i}] is not in correct subgroup: {p:?}"
-                );
-            }
-        }
-
-        for (i, p) in pk.h_exps.iter().enumerate() {
-            if !p.is_zero() {
-                assert!(p.is_on_curve(), "h_exps[{i}] is not on curve: {p:?}");
-                assert!(
-                    p.is_in_correct_subgroup_assuming_on_curve(),
-                    "h_exps[{i}] is not in correct subgroup: {p:?}"
-                );
-            }
-        }
-
-        assert!(pk.vk_alpha_g1.is_on_curve(), "vk_alpha_g1 is not on curve");
-        assert!(
-            pk.vk_alpha_g1.is_in_correct_subgroup_assuming_on_curve(),
-            "vk_alpha_g1 is not in correct subgroup"
-        );
-
-        assert!(pk.vk_beta_g1.is_on_curve(), "vk_beta_g1 is not on curve");
-        assert!(
-            pk.vk_beta_g1.is_in_correct_subgroup_assuming_on_curve(),
-            "vk_beta_g1 is not in correct subgroup"
-        );
-
-        assert!(pk.vk_beta_g2.is_on_curve(), "vk_beta_g2 is not on curve");
-        assert!(
-            pk.vk_beta_g2.is_in_correct_subgroup_assuming_on_curve(),
-            "vk_beta_g2 is not in correct subgroup"
-        );
-
-        assert!(pk.vk_delta_g1.is_on_curve(), "vk_delta_g1 is not on curve");
-        assert!(
-            pk.vk_delta_g1.is_in_correct_subgroup_assuming_on_curve(),
-            "vk_delta_g1 is not in correct subgroup"
-        );
-
-        assert!(pk.vk_delta_g2.is_on_curve(), "vk_delta_g2 is not on curve");
-        assert!(
-            pk.vk_delta_g2.is_in_correct_subgroup_assuming_on_curve(),
-            "vk_delta_g2 is not in correct subgroup"
-        );
+        serde_json::from_str::<ProvingKey>(pk_data).unwrap();
     }
 
     #[test]

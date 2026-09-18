@@ -39,10 +39,16 @@ fn to_coords(value: G1Affine) -> Coords {
 
 fn from_coords(coords: Coords) -> G1Affine {
     if coords[2] == Fq::from(0u8) {
-        G1Affine::zero()
-    } else {
-        G1Affine::new_unchecked(coords[0], coords[1])
+        return G1Affine::zero();
     }
+
+    let point = G1Affine::new_unchecked(coords[0], coords[1]);
+    debug_assert!(point.is_on_curve(), "G1 point not on curve: {point:?}");
+    debug_assert!(
+        point.is_in_correct_subgroup_assuming_on_curve(),
+        "G1 point not in correct subgroup: {point:?}"
+    );
+    point
 }
 
 #[cfg(test)]

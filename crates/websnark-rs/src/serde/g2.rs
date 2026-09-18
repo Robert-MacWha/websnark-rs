@@ -39,13 +39,19 @@ fn to_coords(value: G2Affine) -> Coords {
 
 fn from_coords(coords: Coords) -> G2Affine {
     if coords[2] == [Fq::from(0u8); 2] {
-        G2Affine::zero()
-    } else {
-        G2Affine::new_unchecked(
-            Fq2::new(coords[0][0], coords[0][1]),
-            Fq2::new(coords[1][0], coords[1][1]),
-        )
+        return G2Affine::zero();
     }
+
+    let point = G2Affine::new_unchecked(
+        Fq2::new(coords[0][0], coords[0][1]),
+        Fq2::new(coords[1][0], coords[1][1]),
+    );
+    debug_assert!(point.is_on_curve(), "G2 point not on curve: {point:?}");
+    debug_assert!(
+        point.is_in_correct_subgroup_assuming_on_curve(),
+        "G2 point not in correct subgroup: {point:?}"
+    );
+    point
 }
 
 #[cfg(test)]
