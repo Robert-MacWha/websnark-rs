@@ -1,17 +1,34 @@
 use ark_bn254::{G1Affine, G2Affine};
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use crate::serde::{g1_serde, g2_serde};
+use crate::serde::{G1, G2};
 
 /// CircomV1-compatible zk-SNARK proof
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[serde_with::serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Proof {
-    #[cfg_attr(feature = "serde", serde(rename = "pi_a", with = "g1_serde"))]
+    #[serde(rename = "pi_a")]
+    #[serde_as(as = "G1")]
     pub a: G1Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "pi_b", with = "g2_serde"))]
+    #[serde(rename = "pi_b")]
+    #[serde_as(as = "G2")]
     pub b: G2Affine,
-    #[cfg_attr(feature = "serde", serde(rename = "pi_c", with = "g1_serde"))]
+    #[serde(rename = "pi_c")]
+    #[serde_as(as = "G1")]
     pub c: G1Affine,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn proof_postcard_roundtrip() {
+        let proof_data = include_str!("../testdata/proof.json");
+        let proof: Proof = serde_json::from_str(proof_data).unwrap();
+
+        let bytes = postcard::to_stdvec(&proof).unwrap();
+        let roundtripped: Proof = postcard::from_bytes(&bytes).unwrap();
+
+        assert_eq!(proof, roundtripped);
+    }
 }

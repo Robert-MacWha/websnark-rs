@@ -4,7 +4,6 @@ mod circom;
 pub mod circuit;
 pub mod proof;
 pub mod proving_key;
-#[cfg(feature = "serde")]
 mod serde;
 pub mod verifying_key;
 
