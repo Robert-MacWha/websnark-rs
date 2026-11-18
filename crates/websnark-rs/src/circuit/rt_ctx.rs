@@ -31,6 +31,12 @@ pub struct RTCtx<'a> {
     functions: FxHashMap<String, Rc<Function>>,
 }
 
+/// The caller's scope, saved while a triggered component executes.
+struct SavedScope {
+    scopes: Vec<FxHashMap<String, Value>>,
+    component: Option<String>,
+}
+
 impl<'a> RTCtx<'a> {
     pub fn new(circuit: &'a Circuit) -> Result<Self, CircuitError> {
         let n_signals = circuit.n_signals;
@@ -161,19 +167,22 @@ impl<'a> RTCtx<'a> {
     }
 
     pub fn trigger_component(&mut self, c: usize) -> Result<(), CircuitError> {
+        let (func, saved) = self.enter_component(c)?;
+        execute_function(self, &func)?;
+        self.exit_component(c, saved);
+        Ok(())
+    }
+
+    /// Enters component `c`'s scope, returning its template and the caller's
+    /// scope to pass to `exit_component`.
+    //? Kept out of line so its locals don't add to `trigger_component`'s stack
+    //? frame, which is on the stack once per level of component nesting.
+    #[inline(never)]
+    fn enter_component(&mut self, c: usize) -> Result<(Rc<Function>, SavedScope), CircuitError> {
         debug!("component triggered: {}", self.circuit.components[c].name);
         self.not_init_signals[c] -= 1;
 
-        // Push new scope for this component
         let component = &self.circuit.components[c];
-        let new_component = Some(component.name.clone());
-        let old_component = std::mem::replace(&mut self.current_component, new_component);
-
-        let new_scope = component.params.clone();
-        let first_scope = self.scopes.first().cloned().unwrap_or_default();
-        let new_scope = vec![first_scope, new_scope];
-        let old_scope = std::mem::replace(&mut self.scopes, new_scope);
-
         let func = self
             .templates
             .get(&component.template)
@@ -184,13 +193,23 @@ impl<'a> RTCtx<'a> {
                 ))
             })?
             .clone();
-        execute_function(self, &func)?;
 
-        // Restore old component and scope
-        self.scopes = old_scope;
-        self.current_component = old_component;
+        // Push new scope for this component
+        let first_scope = self.scopes.first().cloned().unwrap_or_default();
+        let new_scope = vec![first_scope, component.params.clone()];
+        let saved = SavedScope {
+            scopes: std::mem::replace(&mut self.scopes, new_scope),
+            component: self.current_component.replace(component.name.clone()),
+        };
+        Ok((func, saved))
+    }
+
+    /// Restores the caller's scope after component `c` finishes.
+    #[inline(never)]
+    fn exit_component(&mut self, c: usize, saved: SavedScope) {
+        self.scopes = saved.scopes;
+        self.current_component = saved.component;
         debug!("component finished: {}", self.circuit.components[c].name);
-        Ok(())
     }
 
     fn build_signal_name(&self, name: &str, selectors: Vec<u32>) -> Result<String, CircuitError> {
@@ -239,27 +258,31 @@ impl<'a> RTCtx<'a> {
     }
 
     fn set_signal_full(&mut self, full: &str, value: Fr) -> Result<(), CircuitError> {
-        // tracing::trace!("set {full} = {value}");
-        let s_id = self.signal_idx(full)?;
-        let first_init = self.witness[s_id].is_none();
-        self.witness[s_id] = Some(value);
-
-        let mut to_trigger = Vec::new();
-        let trigs = self.circuit.signals[s_id].trigger_components.clone();
-        for &c in &trigs {
-            if first_init {
-                self.not_init_signals[c] -= 1;
-            }
-            to_trigger.push(c);
-        }
-
-        for c in to_trigger {
+        let trigs = self.assign_signal(full, value)?;
+        for c in trigs {
             if self.not_init_signals[c] == 0 {
                 self.trigger_component(c)?;
             }
         }
 
         Ok(())
+    }
+
+    /// Writes a signal value, returning the components it may trigger.
+    #[inline(never)]
+    fn assign_signal(&mut self, full: &str, value: Fr) -> Result<Vec<usize>, CircuitError> {
+        // tracing::trace!("set {full} = {value}");
+        let s_id = self.signal_idx(full)?;
+        let first_init = self.witness[s_id].is_none();
+        self.witness[s_id] = Some(value);
+
+        let trigs = self.circuit.signals[s_id].trigger_components.clone();
+        if first_init {
+            for &c in &trigs {
+                self.not_init_signals[c] -= 1;
+            }
+        }
+        Ok(trigs)
     }
 
     #[allow(clippy::unused_self)]
