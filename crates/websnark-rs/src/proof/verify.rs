@@ -10,9 +10,6 @@ use crate::{
 
 /// Verify a groth16 proof against a verifying key and the circuit's public signals.
 ///
-/// Checks `e(A, B) = e(α, β) · e(vk_x, γ) · e(C, δ)`, where
-/// `vk_x = IC₀ + Σ sᵢ·ICᵢ₊₁` over the public signals `sᵢ`.
-///
 /// # Errors
 /// Returns an error if the number of public signals does not match the
 /// verifying key, or if a proof element is not a valid curve/subgroup point.
