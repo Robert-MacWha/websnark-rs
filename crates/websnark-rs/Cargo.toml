@@ -70,6 +70,10 @@ harness = false
 name = "witness"
 harness = false
 
+[[bench]]
+name = "verify"
+harness = false
+
 [package.metadata.wasm-pack.profile.profiling]
 wasm-opt = ['-O', '-g']
 

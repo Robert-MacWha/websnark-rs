@@ -21,6 +21,11 @@ pub enum ProofError {
     InvalidDomain,
     #[error("Invalid coset")]
     InvalidCoset,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum VerifyError {
     #[error("Invalid public signals: expected {expected}, got {got}")]
     InvalidPublicSignals { expected: usize, got: usize },
     #[error("Proof element is not a valid curve point")]
