@@ -4,9 +4,11 @@ mod fr_snarkjs;
 #[allow(clippy::module_inception)]
 mod proof;
 mod prove;
+mod verify;
 
 pub use proof::Proof;
 pub use prove::{prove, prove_random};
+pub use verify::verify;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -19,4 +21,8 @@ pub enum ProofError {
     InvalidDomain,
     #[error("Invalid coset")]
     InvalidCoset,
+    #[error("Invalid public signals: expected {expected}, got {got}")]
+    InvalidPublicSignals { expected: usize, got: usize },
+    #[error("Proof element is not a valid curve point")]
+    InvalidProofPoint,
 }
